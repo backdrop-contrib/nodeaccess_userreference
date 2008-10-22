@@ -1,0 +1,99 @@
+<?php
+// $Id$
+
+/**
+ * Implementation of hook_perm().
+ */
+function nodeaccess_userreference_perm() {
+  return array('administer node access user reference');
+}
+
+/**
+ * Implementation of hook_node_grants().
+ */
+function nodeaccess_userreference_node_grants($account, $op) {
+  $grants = array();
+  $grants['nodeaccess_userreference'][] = $account->uid;
+  return $grants;
+}
+
+/**
+ * Implementation of hook_form_alter().
+ */
+function nodeaccess_userreference_form_content_field_edit_form_alter(&$form, $form_state) {
+  if ($form['#field']['type'] == "userreference") {
+    $field_name = &$form['#field']['field_name'];
+    $type_name = &$form['#field']['type_name'];
+    $var_name = "nodeaccess_userreference_" . $field_name . '_' . $type_name;
+    $view_node = variable_get($var_name, 0);
+    $form['widget']['nodeaccess_userreference_view'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Grant "view" node access to user'),
+      '#default_value' => $view_node,
+      '#description' => t('Give the referenced user access to view the node, if they cannot already do so.'),
+      '#weight' => 42,
+    );
+    $form['#submit'][] = 'nodeaccess_userreference_content_field_edit_form_submit';
+  }
+}
+
+/**
+ * Extra submit function for User Reference field config.
+ */
+function nodeaccess_userreference_content_field_edit_form_submit($form, &$form_state) {
+  $field_name = &$form_state['values']['field_name'];
+  $type_name = &$form_state['values']['type_name'];
+  $view_node = &$form_state['values']['nodeaccess_userreference_view'];
+  $var_name = "nodeaccess_userreference_" . $field_name . '_' . $type_name;
+  variable_set($var_name, $view_node);
+}
+
+/**
+ * Implementation of hook_node_access_records().
+ */
+function nodeaccess_userreference_node_access_records($node) {
+  if (nodeaccess_userreference_disabling()) {
+    return;
+  }
+  $grants = array();
+  $info = content_fields(NULL, $node->type);
+  foreach ($info as $field) {
+    if ($field['type'] == 'userreference') {
+      $var_name = "nodeaccess_userreference_" . $field['field_name'] . '_' . $field['type_name'];
+      if (variable_get($var_name, 0) == 1) {
+        foreach ($node->$field['field_name'] as $userreference) {
+          $grants[] = array(
+            'realm' => 'nodeaccess_userreference',
+            'gid' => $userreference['uid'],
+            'grant_view' => TRUE,
+            'grant_update' => FALSE,
+            'grant_delete' => FALSE,
+            'priority' => $priority,
+          );
+        }
+      }
+    }
+  }
+  return $grants;
+}
+
+/**
+ * Implementation of hook_enable().
+ */
+function nodeaccess_userreference_enable() {
+}
+
+/**
+ * Implementation of hook_disable().
+ */
+function nodeaccess_userreference_disable() {
+  nodeaccess_userreference_disabling(TRUE);
+}
+
+function nodeaccess_userreference_disabling($set = NULL) {
+  static $disabling = FALSE;
+  if ($set !== NULL) {
+    $disabling = $set;
+  }
+  return $disabling;
+}

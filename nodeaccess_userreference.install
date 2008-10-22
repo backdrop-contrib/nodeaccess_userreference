@@ -1,0 +1,56 @@
+<?php
+// $Id$
+
+/**
+ * Implementation of hook_schema().
+
+function nodeaccess_userreference_schema() {
+  $schema['nodeaccess_userreference'] = array(
+    'fields' => array(
+      'nid' => array(
+        'type' => 'int', 
+        'unsigned' => TRUE, 
+        'not null' => TRUE, 
+        'default' => 0,
+      ),
+      'realm' => array(
+        'type' => 'varchar', 
+        'length' => 255, 
+        'not null' => TRUE, 
+        'default' => '',
+      ),
+      'password'  => array(
+        'type' => 'varchar', 
+        'length' => 255, 
+        'not null' => TRUE, 
+        'default' => '',
+        ),
+    ),
+    'primary key' => array('nid', 'realm'),
+  );
+  return $schema;
+} */
+
+/**
+ * Implementation of hook_install().
+ 
+function nodeaccess_userreference_install() {
+  // Create tables.
+  drupal_install_schema('nodeaccess_userreference');
+}*/
+
+/**
+ * Implementation of hook_uninstall().
+
+function nodeaccess_userreference_uninstall() {
+  // Remove tables.
+  drupal_uninstall_schema('nodeaccess_userreference');
+
+  // Remove variables.
+  variable_del('nodeaccess_userreference_priority');
+  for ($i = 1; variable_get('nodeaccess_userreference_realm_'.$i.'_name', FALSE) !== FALSE; $i++) {
+    variable_del('nodeaccess_userreference_realm_'.$i.'_name');
+    variable_del('nodeaccess_userreference_realm_'.$i.'_types');
+    variable_del('nodeaccess_userreference_realm_'.$i.'_roles');
+  }
+} */
