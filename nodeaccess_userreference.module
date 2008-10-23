@@ -33,6 +33,27 @@ function nodeaccess_userreference_form_content_field_edit_form_alter(&$form, $fo
       '#description' => t('Give the referenced user access to view the node, if they cannot already do so.'),
       '#weight' => 42,
     );
+
+    $update_name = "nodeaccess_userreference_" . $field_name . '_' . $type_name . '_update';
+    $update_node = variable_get($update_name, 0);
+    $form['widget']['nodeaccess_userreference_update'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Grant "edit" node access to user'),
+      '#default_value' => $update_node,
+      '#description' => t('Give the referenced user access to edit the node, if they cannot already do so.'),
+      '#weight' => 43,
+    );
+
+    $delete_name = "nodeaccess_userreference_" . $field_name . '_' . $type_name . '_delete';
+    $delete_node = variable_get($delete_name, 0);
+    $form['widget']['nodeaccess_userreference_delete'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Grant "delete" node access to user'),
+      '#default_value' => $delete_node,
+      '#description' => t('Give the referenced user access to delete the node, if they cannot already do so.'),
+      '#weight' => 44,
+    );
+
     $form['#submit'][] = 'nodeaccess_userreference_content_field_edit_form_submit';
   }
 }
@@ -43,9 +64,18 @@ function nodeaccess_userreference_form_content_field_edit_form_alter(&$form, $fo
 function nodeaccess_userreference_content_field_edit_form_submit($form, &$form_state) {
   $field_name = &$form_state['values']['field_name'];
   $type_name = &$form_state['values']['type_name'];
+
   $view_node = &$form_state['values']['nodeaccess_userreference_view'];
   $var_name = "nodeaccess_userreference_" . $field_name . '_' . $type_name;
   variable_set($var_name, $view_node);
+
+  $update_node = &$form_state['values']['nodeaccess_userreference_update'];
+  $update_name = "nodeaccess_userreference_" . $field_name . '_' . $type_name . '_update';
+  variable_set($update_name, $update_node);
+
+  $delete_node = &$form_state['values']['nodeaccess_userreference_delete'];
+  $delete_name = "nodeaccess_userreference_" . $field_name . '_' . $type_name . '_delete';
+  variable_set($delete_name, $delete_node);
 }
 
 /**
@@ -57,19 +87,25 @@ function nodeaccess_userreference_node_access_records($node) {
   }
   $grants = array();
   $info = content_fields(NULL, $node->type);
-  foreach ($info as $field) {
-    if ($field['type'] == 'userreference') {
-      $var_name = "nodeaccess_userreference_" . $field['field_name'] . '_' . $field['type_name'];
-      if (variable_get($var_name, 0) == 1) {
-        foreach ($node->$field['field_name'] as $userreference) {
-          $grants[] = array(
-            'realm' => 'nodeaccess_userreference',
-            'gid' => $userreference['uid'],
-            'grant_view' => TRUE,
-            'grant_update' => FALSE,
-            'grant_delete' => FALSE,
-            'priority' => $priority,
-          );
+  if (is_array($info)) {
+    foreach ($info as $field) {
+      if ($field['type'] == 'userreference') {
+        $var_name = "nodeaccess_userreference_" . $field['field_name'] . '_' . $field['type_name'];
+        $update_name = "nodeaccess_userreference_" . $field['field_name'] . '_' . $field['type_name'] . '_update';
+        $delete_name = "nodeaccess_userreference_" . $field['field_name'] . '_' . $field['type_name'] . '_delete';
+        if ((variable_get($var_name, 0) == 1 
+          || variable_get($update_name, 0) == 1 
+          || variable_get($delete_name, 0) == 1) && is_array($field['field_name'])) {
+          foreach ($field['field_name'] as $userreference) {
+            $grants[] = array(
+              'realm' => 'nodeaccess_userreference',
+              'gid' => $userreference['uid'],
+              'grant_view' => variable_get($var_name, 0),
+              'grant_update' => variable_get($update_name, 0),
+              'grant_delete' => variable_get($delete_name, 0),
+              'priority' => 0,
+            );
+          }
         }
       }
     }
