@@ -14,7 +14,10 @@ function nodeaccess_userreference_perm() {
 function nodeaccess_userreference_node_grants($account, $op) {
   $grants = array();
   $grants['nodeaccess_userreference'][] = $account->uid;
-  return $grants;
+  if (!empty($grants)) {
+    return $grants;
+  }
+  return null;
 }
 
 /**
@@ -95,8 +98,8 @@ function nodeaccess_userreference_node_access_records($node) {
         $delete_name = "nodeaccess_userreference_" . $field['field_name'] . '_' . $field['type_name'] . '_delete';
         if ((variable_get($var_name, 0) == 1 
           || variable_get($update_name, 0) == 1 
-          || variable_get($delete_name, 0) == 1) && is_array($field['field_name'])) {
-          foreach ($field['field_name'] as $userreference) {
+          || variable_get($delete_name, 0) == 1) && is_array($node->$field['field_name'])) {
+          foreach ($node->$field['field_name'] as $userreference) {
             $grants[] = array(
               'realm' => 'nodeaccess_userreference',
               'gid' => $userreference['uid'],
@@ -110,7 +113,10 @@ function nodeaccess_userreference_node_access_records($node) {
       }
     }
   }
-  return $grants;
+  if (!empty($grants)) {
+    return $grants;
+  }
+  return null;
 }
 
 /**
