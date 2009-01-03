@@ -96,18 +96,26 @@ function nodeaccess_userreference_node_access_records($node) {
         $var_name = "nodeaccess_userreference_" . $field['field_name'] . '_' . $field['type_name'];
         $update_name = "nodeaccess_userreference_" . $field['field_name'] . '_' . $field['type_name'] . '_update';
         $delete_name = "nodeaccess_userreference_" . $field['field_name'] . '_' . $field['type_name'] . '_delete';
-        if ((variable_get($var_name, 0) == 1 
-          || variable_get($update_name, 0) == 1 
-          || variable_get($delete_name, 0) == 1) && is_array($node->$field['field_name'])) {
+        $grant_view = variable_get($var_name, 0);
+        $grant_update = variable_get($update_name, 0);
+        $grant_delete = variable_get($delete_name, 0);
+        if (($grant_view || $grant_update || $grant_delete) && is_array($node->$field['field_name'])) {
           foreach ($node->$field['field_name'] as $userreference) {
-            $grants[] = array(
+            $grant = array(
               'realm' => 'nodeaccess_userreference',
               'gid' => $userreference['uid'],
-              'grant_view' => variable_get($var_name, 0),
-              'grant_update' => variable_get($update_name, 0),
-              'grant_delete' => variable_get($delete_name, 0),
               'priority' => 0,
             );
+            if ($grant_view) {
+              $grant['grant_view'] = 1;
+            }
+            if ($grant_update) {
+              $grant['grant_update'] = 1;
+            }
+            if ($grant_delete) {
+              $grant['grant_delete'] = 1;
+            }
+            $grants[] = $grant;
           }
         }
       }
