@@ -85,9 +85,6 @@ function nodeaccess_userreference_content_field_edit_form_submit($form, &$form_s
  * Implementation of hook_node_access_records().
  */
 function nodeaccess_userreference_node_access_records($node) {
-  if (nodeaccess_userreference_disabling()) {
-    return;
-  }
   $grants = array();
   $info = content_fields(NULL, $node->type);
   if (is_array($info)) {
@@ -100,6 +97,11 @@ function nodeaccess_userreference_node_access_records($node) {
         $grant_update = variable_get($update_name, 0);
         $grant_delete = variable_get($delete_name, 0);
         if (($grant_view || $grant_update || $grant_delete) && is_array($node->$field['field_name'])) {
+          $grants[] = array(
+                'realm' => 'all',
+                'gid' => 0,
+                'grant_view' => 1,
+          );
           foreach ($node->$field['field_name'] as $userreference) {
             $grant = array(
               'realm' => 'nodeaccess_userreference',
@@ -125,25 +127,4 @@ function nodeaccess_userreference_node_access_records($node) {
     return $grants;
   }
   return null;
-}
-
-/**
- * Implementation of hook_enable().
- */
-function nodeaccess_userreference_enable() {
-}
-
-/**
- * Implementation of hook_disable().
- */
-function nodeaccess_userreference_disable() {
-  nodeaccess_userreference_disabling(TRUE);
-}
-
-function nodeaccess_userreference_disabling($set = NULL) {
-  static $disabling = FALSE;
-  if ($set !== NULL) {
-    $disabling = $set;
-  }
-  return $disabling;
 }
