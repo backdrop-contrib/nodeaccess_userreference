@@ -125,7 +125,7 @@ function nodeaccess_userreference_node_access_records($node) {
               $grants[$uid] = array(
                 'realm' => 'nodeaccess_userreference',
                 'gid' => $uid,
-                'priority' => 0,
+                'priority' => $priority,
               );
             }
             if ($data['view']) {
