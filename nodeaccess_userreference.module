@@ -121,11 +121,13 @@ function nodeaccess_userreference_node_access_records($node) {
         if (($data['view'] || $data['update'] || $data['delete']) && is_array($node->$field['field_name'])) {
           foreach ($node->$field['field_name'] as $userreference) {
             $uid = &$userreference['uid'];
-            $grants[$uid] = array(
-              'realm' => 'nodeaccess_userreference',
-              'gid' => $uid,
-              'priority' => $priority,
-            );
+            if (!isset($grants[$uid])) {
+              $grants[$uid] = array(
+                'realm' => 'nodeaccess_userreference',
+                'gid' => $uid,
+                'priority' => 0,
+              );
+            }
             if ($data['view']) {
               $grants[$uid]['grant_view'] = 1;
             }
