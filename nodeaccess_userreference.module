@@ -97,6 +97,7 @@ function nodeaccess_userreference_form_content_field_edit_form_alter(&$form, $fo
  * Extra submit function for User Reference field config.
  */
 function nodeaccess_userreference_content_field_edit_form_submit($form, &$form_state) {
+  $form_values = &$form_state['values'];
   $variable = 'nodeaccess_userreference_'. $form_values['field_name'] .'_'. $form_values['type_name'];
   $data = array(
     'view' => $form_values['nodeaccess_userreference_view'],
