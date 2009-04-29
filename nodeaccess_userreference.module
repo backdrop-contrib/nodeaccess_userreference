@@ -121,22 +121,24 @@ function nodeaccess_userreference_node_access_records($node) {
         $data = variable_get($variable, array('view' => 0, 'update' => 0, 'delete' => 0));
         if (($data['view'] || $data['update'] || $data['delete']) && is_array($node->$field['field_name'])) {
           foreach ($node->$field['field_name'] as $userreference) {
-            $uid = &$userreference['uid'];
-            if (!isset($grants[$uid])) {
-              $grants[$uid] = array(
-                'realm' => 'nodeaccess_userreference',
-                'gid' => $uid,
-                'priority' => $priority,
-              );
-            }
-            if ($data['view']) {
-              $grants[$uid]['grant_view'] = 1;
-            }
-            if ($data['update']) {
-              $grants[$uid]['grant_update'] = 1;
-            }
-            if ($data['delete']) {
-              $grants[$uid]['grant_delete'] = 1;
+            if ($userreference['uid']) {
+              $uid = &$userreference['uid'];
+              if (!isset($grants[$uid])) {
+                $grants[$uid] = array(
+                  'realm' => 'nodeaccess_userreference',
+                  'gid' => $uid,
+                  'priority' => $priority,
+                );
+              }
+              if ($data['view']) {
+                $grants[$uid]['grant_view'] = 1;
+              }
+              if ($data['update']) {
+                $grants[$uid]['grant_update'] = 1;
+              }
+              if ($data['delete']) {
+                $grants[$uid]['grant_delete'] = 1;
+              }
             }
           }
         }
