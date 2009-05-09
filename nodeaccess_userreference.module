@@ -105,6 +105,10 @@ function nodeaccess_userreference_content_field_edit_form_submit($form, &$form_s
     'delete' => $form_values['nodeaccess_userreference_delete'],
   );
   variable_set($variable, $data);
+  $nodes = node_load(array('type' => $form_values['type_name']));
+  if ($nodes) {
+    node_access_needs_rebuild(TRUE);
+  }
 }
 
 /**
