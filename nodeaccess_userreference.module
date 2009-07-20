@@ -116,12 +116,13 @@ function nodeaccess_userreference_content_field_edit_form_submit($form, &$form_s
  */
 function nodeaccess_userreference_node_access_records($node) {
   $grants = array();
-  $info = content_fields(NULL, $node->type);
+  $content_types = content_types($node->type);
+  $info = &$content_types['fields'];
   $priority = variable_get('nodeaccess_userreference_priority', 0);
   if (is_array($info)) {
     foreach ($info as $field) {
       if ($field['type'] == 'userreference') {
-        $variable = 'nodeaccess_userreference_'. $field['field_name'] .'_'. $field['type_name'];
+        $variable = 'nodeaccess_userreference_'. $field['field_name'] .'_'. $node->type;
         $data = variable_get($variable, array('view' => 0, 'update' => 0, 'delete' => 0));
         if (($data['view'] || $data['update'] || $data['delete']) && is_array($node->$field['field_name'])) {
           foreach ($node->$field['field_name'] as $userreference) {
