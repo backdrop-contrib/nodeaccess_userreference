@@ -122,8 +122,8 @@ function nodeaccess_userreference_node_access_records($node) {
     foreach ($info as $field) {
       if ($field['type'] == 'userreference') {
         $data = nodeaccess_userreference_field_settings($field['type_name'], $field['field_name']);
-        if (($data['view'] || $data['update'] || $data['delete']) && is_array($node->$field['field_name'])) {
-          foreach ($node->$field['field_name'] as $userreference) {
+        if (!empty($data) && !empty($node->$field['field_name'])) {
+          foreach ((array)$node->$field['field_name'] as $userreference) {
             if ($userreference['uid']) {
               $uid = &$userreference['uid'];
               if (!isset($grants[$uid])) {
@@ -133,13 +133,13 @@ function nodeaccess_userreference_node_access_records($node) {
                   'priority' => $priority,
                 );
               }
-              if ($data['view']) {
+              if (isset($data['view']) && $data['view']) {
                 $grants[$uid]['grant_view'] = 1;
               }
-              if ($data['update']) {
+              if (isset($data['update']) && $data['update']) {
                 $grants[$uid]['grant_update'] = 1;
               }
-              if ($data['delete']) {
+              if (isset($data['delete']) && $data['delete']) {
                 $grants[$uid]['grant_delete'] = 1;
               }
             }
