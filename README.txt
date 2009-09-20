@@ -1,11 +1,12 @@
 ; $Id$
 
+Node Access User Reference README
+
 CONTENTS OF THIS FILE
 ----------------------
 
   * Introduction
   * Installation
-  * Configuration
   * Usage
   
 
@@ -20,11 +21,6 @@ INSTALLATION
 ------------
 1. Copy nodeaccess_userreference folder to modules (usually 'sites/all/modules') directory.
 2. At 'admin/build/modules' enable the Node Access User Reference module.
-
-
-CONFIGURATION
--------------
-1. Enable permissions at 'admin/user/permissions'.
 
 
 USAGE
