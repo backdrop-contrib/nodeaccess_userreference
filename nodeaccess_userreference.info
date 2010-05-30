@@ -2,4 +2,5 @@
 name = Node Access User Reference
 description = Provides per node access control with CCK User Reference fields.
 core = 6.x
+package = "CCK"
 dependencies[] = userreference
