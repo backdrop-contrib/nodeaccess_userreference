@@ -2,12 +2,17 @@
 // $Id$
 
 /**
- * Implementation of hook_menu().
+ * @file
+ * The Node access user reference module.
+ */
+
+/**
+ * Implements hook_menu().
  */
 function nodeaccess_userreference_menu() {
   $items = array();
 
-  $items['admin/settings/nodeaccess_userreference'] = array(
+  $items['admin/config/nodeaccess_userreference'] = array(
     'title' => 'Node access user reference settings',
     'description' => 'Configure Node Access User Reference.',
     'page callback' => 'drupal_get_form',
@@ -15,31 +20,31 @@ function nodeaccess_userreference_menu() {
     'access arguments' => array('administer site configuration'),
     'type' => MENU_NORMAL_ITEM,
   );
-    
+
   return $items;
 }
 
 /**
- * System settings form for nodeaccess_userreference.
+ * System settings form for Node access user reference.
  */
-function nodeaccess_userreference_admin_settings() {
-  
+function nodeaccess_userreference_admin_settings($form, &$form_state) {
+
   $form['nodeaccess_userreference_priority'] = array(
     '#type' => 'weight',
     '#title' => t('Set node grants priority for Node Access User Reference'),
     '#default_value' => variable_get('nodeaccess_userreference_priority', 0),
-    '#description' => t('If you are only using this access control module, you can safely ignore this. 
+    '#description' => t('If you are only using this access control module, you can safely ignore this.
     If you are using multiple access control modules you can adjust the priority of this module.'),
   );
-  
-  // Add additional submit processing
+
+  // Add additional submit processing.
   $form['#submit'][] = 'nodeaccess_userreference_admin_settings_submit';
 
   return system_settings_form($form);
 }
 
 /**
- * Implementation of hook_node_grants().
+ * Implements hook_node_grants().
  */
 function nodeaccess_userreference_node_grants($account, $op) {
   $grants = array();
@@ -51,12 +56,12 @@ function nodeaccess_userreference_node_grants($account, $op) {
 }
 
 /**
- * Implementation of hook_form-FORM-ID_alter().
+ * Implements hook_form-FORM-ID_alter().
  */
-function nodeaccess_userreference_form_content_field_edit_form_alter(&$form, $form_state) {
-  if ($form['#field']['type'] == "userreference") {
+function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $form_state) {
+  if ($form['#field']['type'] == "user_reference") {
 
-    $data = nodeaccess_userreference_field_settings($form['#field']['type_name'],  $form['#field']['field_name']);
+    $data = nodeaccess_userreference_field_settings($form['#field']['field_name']);
 
     $form['widget']['nodeaccess_userreference_view'] = array(
       '#type' => 'checkbox',
@@ -87,7 +92,7 @@ function nodeaccess_userreference_form_content_field_edit_form_alter(&$form, $fo
 }
 
 /**
- * Extra submit function for User Reference field config.
+ * Extra submit function for User reference field config.
  */
 function nodeaccess_userreference_content_field_edit_form_submit($form, &$form_state) {
   $form_values = &$form_state['values'];
@@ -96,44 +101,52 @@ function nodeaccess_userreference_content_field_edit_form_submit($form, &$form_s
     'update' => $form_values['nodeaccess_userreference_update'],
     'delete' => $form_values['nodeaccess_userreference_delete'],
   );
-  nodeaccess_userreference_field_settings($form_values['type_name'], $form_values['field_name'], $data);
-  $nodes = node_load(array('type' => $form_values['type_name']));
+  nodeaccess_userreference_field_settings($form_values['instance']['field_name'], $data);
+  $nodes = node_load_multiple(array(), array('type' => $form_values['instance']['bundle']));
   if ($nodes) {
     node_access_needs_rebuild(TRUE);
   }
 }
 
 /**
- * Implementation of hook_node_access_records().
+ * Implements hook_node_access_records().
  */
 function nodeaccess_userreference_node_access_records($node) {
   $grants = array();
-  $content_types = content_types($node->type);
-  $info = &$content_types['fields'];
+  $bundles = field_info_instances('node');
   $priority = variable_get('nodeaccess_userreference_priority', 0);
-  if (is_array($info)) {
-    foreach ($info as $field) {
-      if ($field['type'] == 'userreference') {
-        $data = nodeaccess_userreference_field_settings($field['type_name'], $field['field_name']);
+  foreach ($bundles as $fields) {
+    foreach ($fields as $field) {
+      // TODO: Find a better way to target user_reference fields
+      if ($field['display']['default']['type'] == 'user_reference_default') {
+        $data = nodeaccess_userreference_field_settings($field['field_name']);
         if (!empty($data) && !empty($node->$field['field_name'])) {
-          foreach ((array)$node->$field['field_name'] as $userreference) {
-            if ($userreference['uid']) {
-              $uid = &$userreference['uid'];
-              if (!isset($grants[$uid])) {
-                $grants[$uid] = array(
-                  'realm' => 'nodeaccess_userreference',
-                  'gid' => $uid,
-                  'priority' => $priority,
-                );
-              }
-              if (isset($data['view']) && $data['view']) {
-                $grants[$uid]['grant_view'] = 1;
-              }
-              if (isset($data['update']) && $data['update']) {
-                $grants[$uid]['grant_update'] = 1;
-              }
-              if (isset($data['delete']) && $data['delete']) {
-                $grants[$uid]['grant_delete'] = 1;
+          foreach ((array) $node->$field['field_name'] as $language) {
+            foreach ($language as $userreference) {
+              if ($userreference['uid']) {
+                $uid = &$userreference['uid'];
+                if (!isset($grants[$uid])) {
+                  $grants[$uid] = array(
+                    'realm' => 'nodeaccess_userreference',
+                    'gid' => $uid,
+                    'priority' => $priority,
+                  );
+                }
+                if (isset($data['view']) && $data['view']) {
+                  $grants[$uid]['grant_view'] = 1;
+                } else {
+                  $grants[$uid]['grant_view'] = 0;
+                }
+                if (isset($data['update']) && $data['update']) {
+                  $grants[$uid]['grant_update'] = 1;
+                } else {
+                  $grants[$uid]['grant_update'] = 0;
+                }
+                if (isset($data['delete']) && $data['delete']) {
+                  $grants[$uid]['grant_delete'] = 1;
+                } else {
+                  $grants[$uid]['grant_update'] = 0;
+                }
               }
             }
           }
@@ -161,34 +174,33 @@ function nodeaccess_userreference_node_access_records($node) {
  * @return
  *   The stored or updated value of the settings for this field.
  */
-function nodeaccess_userreference_field_settings($type_name, $field_name, $variable = NULL) {
-
-  // 'get' the variable
+function nodeaccess_userreference_field_settings($field_name, $variable = NULL) {
+  // Get the variable.
   $data = variable_get('nodeaccess_userreference', NULL);
-  if (!$data || !isset($data[$type_name][$field_name])) {
+  if (!$data || !isset($data[$field_name])) {
     // Attempt to get result from old variables.
-    $old_varname = substr('nodeaccess_userreference_'. $field_name .'_'. $type_name, 0, 48);
+    $old_varname = substr('nodeaccess_userreference_' . $field_name, 0, 48);
     $old_data = variable_get($old_varname, NULL);
     if (is_array($old_data)) {
       variable_del($old_varname);
-      nodeaccess_userreference_field_settings($type_name, $field_name, $old_data);
-      $data[$type_name][$field_name] = $old_data;
+      nodeaccess_userreference_field_settings($field_name, $old_data);
+      $data[$field_name] = $old_data;
     }
     else {
-      // default
-      $data[$type_name][$field_name] = array(
-        'view' => 0, 
-        'update' => 0, 
+      // Default.
+      $data[$field_name] = array(
+        'view' => 0,
+        'update' => 0,
         'delete' => 0,
       );
     }
   }
 
-  // change and 'set' the variable
+  // Change and set the variable.
   if (isset($variable)) {
-    $data[$type_name][$field_name] = $variable;
+    $data[$field_name] = $variable;
     variable_set('nodeaccess_userreference', $data);
   }
 
-  return $data[$type_name][$field_name];
+  return $data[$field_name];
 }

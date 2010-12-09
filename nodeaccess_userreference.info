@@ -1,6 +1,8 @@
 ; $Id$
-name = Node Access User Reference
-description = Provides per node access control with CCK User Reference fields.
-core = 6.x
+name = Node access user reference
+description = Provides node access through User reference fields.
+core = 7.x
 package = "CCK"
-dependencies[] = userreference
+dependencies[] = user_reference
+files[] = nodeaccess_userreference.install
+files[] = nodeaccess_userreference.module

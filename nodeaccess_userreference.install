@@ -2,7 +2,13 @@
 // $Id$
 
 /**
- * Implementation of hook_uninstall().
+ * @file
+ * Install, update and uninstall functions for the Node access user reference 
+ * module.
+ */
+
+/**
+ * Implements hook_uninstall().
  */
 function nodeaccess_userreference_uninstall() {
   variable_del('nodeaccess_userreference');
