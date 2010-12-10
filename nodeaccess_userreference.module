@@ -145,7 +145,7 @@ function nodeaccess_userreference_node_access_records($node) {
                 if (isset($data['delete']) && $data['delete']) {
                   $grants[$uid]['grant_delete'] = 1;
                 } else {
-                  $grants[$uid]['grant_update'] = 0;
+                  $grants[$uid]['grant_delete'] = 0;
                 }
               }
             }
