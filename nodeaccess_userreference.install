@@ -3,7 +3,7 @@
 
 /**
  * @file
- * Install, update and uninstall functions for the Node access user reference 
+ * Install, update and uninstall functions for the Node access user reference
  * module.
  */
 
@@ -12,4 +12,5 @@
  */
 function nodeaccess_userreference_uninstall() {
   variable_del('nodeaccess_userreference');
+  variable_del('nodeaccess_userreference_priority');
 }
