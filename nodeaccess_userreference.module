@@ -157,18 +157,12 @@ function nodeaccess_userreference_node_access_records($node) {
                 }
                 if (isset($data['view']) && $data['view']) {
                   $grants[$uid]['grant_view'] = 1;
-                } else {
-                  $grants[$uid]['grant_view'] = 0;
                 }
                 if (isset($data['update']) && $data['update']) {
                   $grants[$uid]['grant_update'] = 1;
-                } else {
-                  $grants[$uid]['grant_update'] = 0;
                 }
                 if (isset($data['delete']) && $data['delete']) {
                   $grants[$uid]['grant_delete'] = 1;
-                } else {
-                  $grants[$uid]['grant_delete'] = 0;
                 }
               }
             }
