@@ -13,4 +13,7 @@
 function nodeaccess_userreference_uninstall() {
   variable_del('nodeaccess_userreference');
   variable_del('nodeaccess_userreference_priority');
+  variable_del('nodeaccess_userreference_author_view');
+  variable_del('nodeaccess_userreference_author_update');
+  variable_del('nodeaccess_userreference_author_delete');
 }

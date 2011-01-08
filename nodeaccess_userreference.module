@@ -14,7 +14,7 @@ function nodeaccess_userreference_menu() {
 
   $items['admin/config/nodeaccess_userreference'] = array(
     'title' => 'Node access user reference settings',
-    'description' => 'Configure Node Access User Reference.',
+    'description' => 'Configure Node access user reference.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('nodeaccess_userreference_admin_settings'),
     'access arguments' => array('administer site configuration'),
@@ -31,10 +31,28 @@ function nodeaccess_userreference_admin_settings($form, &$form_state) {
 
   $form['nodeaccess_userreference_priority'] = array(
     '#type' => 'weight',
-    '#title' => t('Set node grants priority for Node Access User Reference'),
+    '#title' => t('Set node grants priority for Node access user reference'),
     '#default_value' => variable_get('nodeaccess_userreference_priority', 0),
     '#description' => t('If you are only using this access control module, you can safely ignore this.
     If you are using multiple access control modules you can adjust the priority of this module.'),
+  );
+  $form['nodeaccess_userreference_author_view'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Grant <em>view</em> access to node authors'),
+    '#default_value' => variable_get('nodeaccess_userreference_author_view', 1),
+    '#description' => t('Grants <em>view</em> access to authors.  Use this if not using other node access modules to set author access.'),
+  );
+  $form['nodeaccess_userreference_author_update'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Grant <em>edit</em> access to node authors'),
+    '#default_value' => variable_get('nodeaccess_userreference_author_update', 1),
+    '#description' => t('Grants <em>edit</em> access to authors.  Use this if not using other node access modules to set author access.'),
+  );
+  $form['nodeaccess_userreference_author_delete'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Grant <em>delete</em> access to node authors'),
+    '#default_value' => variable_get('nodeaccess_userreference_author_delete', 1),
+    '#description' => t('Grants <em>delete</em> access to authors.  Use this if not using other node access modules to set author access.'),
   );
 
   // Add additional submit processing.
@@ -44,11 +62,19 @@ function nodeaccess_userreference_admin_settings($form, &$form_state) {
 }
 
 /**
+ * Submit function for the system settings form for nodeaccess_userreference.
+ */
+function nodeaccess_userreference_admin_settings_submit() {
+  node_access_needs_rebuild(TRUE);
+}
+
+/**
  * Implements hook_node_grants().
  */
 function nodeaccess_userreference_node_grants($account, $op) {
   $grants = array();
   $grants['nodeaccess_userreference'][] = $account->uid;
+  $grants['nodeaccess_userreference_author'][] = $account->uid;
   if (!empty($grants)) {
     return $grants;
   }
@@ -65,7 +91,7 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
 
     $form['widget']['nodeaccess_userreference_view'] = array(
       '#type' => 'checkbox',
-      '#title' => t('Grant "view" node access to user'),
+      '#title' => t('Grant <em>view</em> node access to user'),
       '#default_value' => $data['view'],
       '#description' => t('Give the referenced user access to view the node, if they cannot already do so.'),
       '#weight' => 42,
@@ -73,7 +99,7 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
 
     $form['widget']['nodeaccess_userreference_update'] = array(
       '#type' => 'checkbox',
-      '#title' => t('Grant "edit" node access to user'),
+      '#title' => t('Grant <em>edit</em> node access to user'),
       '#default_value' => $data['update'],
       '#description' => t('Give the referenced user access to edit the node, if they cannot already do so.'),
       '#weight' => 43,
@@ -81,7 +107,7 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
 
     $form['widget']['nodeaccess_userreference_delete'] = array(
       '#type' => 'checkbox',
-      '#title' => t('Grant "delete" node access to user'),
+      '#title' => t('Grant <em>delete</em> node access to user'),
       '#default_value' => $data['delete'],
       '#description' => t('Give the referenced user access to delete the node, if they cannot already do so.'),
       '#weight' => 44,
@@ -155,8 +181,21 @@ function nodeaccess_userreference_node_access_records($node) {
     }
   }
   if (!empty($grants)) {
-    // Allow other modules to change the grants.
-    drupal_alter('nodeaccess_userreference_grants', $grants, $node);
+    // Store author grants according to configuration.
+    $grant_view = variable_get('nodeaccess_userreference_author_view', 1);
+    $grant_update = variable_get('nodeaccess_userreference_author_update', 1);
+    $grant_delete = variable_get('nodeaccess_userreference_author_delete', 1);
+    if ($grant_view || $grant_update || $grant_delete) {
+      $grants[] = array(
+        'realm' => 'nodeaccess_userreference_author',
+        'gid' => $node->uid,
+        'priority' => $priority,
+        'grant_view' => $grant_view,
+        'grant_update' => $grant_update,
+        'grant_delete' => $grant_delete,
+      );
+    }
+
     return $grants;
   }
   return NULL;

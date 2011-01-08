@@ -1,6 +1,6 @@
 ; $Id$
 
-Node Access User Reference README
+Node access user reference README
 
 CONTENTS OF THIS FILE
 ----------------------
@@ -23,11 +23,11 @@ INSTALLATION
    http://drupal.org/project/references
 2. Copy nodeaccess_userreference folder to modules directory.
    (Usually 'sites/all/modules')
-3. At 'admin/build/modules' enable the Node Access User Reference module.
+3. At 'admin/build/modules' enable the Node access user reference module.
 
 
 USAGE
 -----
-Create a User Reference field in your content type, on the page where you 
+Create a User reference field in your content type, on the page where you 
 configure the properties of your field, you will also see settings for 
 granting access to the referenced user.
