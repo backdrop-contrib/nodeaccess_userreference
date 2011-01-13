@@ -17,3 +17,32 @@ function nodeaccess_userreference_uninstall() {
   variable_del('nodeaccess_userreference_author_update');
   variable_del('nodeaccess_userreference_author_delete');
 }
+
+/**
+ * Implements of hook_update_N().
+ *
+ * Unset author grants for updated installations.
+ *
+ * @see hook_update_N()
+ */
+function nodeaccess_userreference_update_6300() {
+  // Set author grants to 0, unless already set.
+  $view = variable_get('nodeaccess_userreference_author_view', 0);
+  $update = variable_get('nodeaccess_userreference_author_update', 0);
+  $delete = variable_get('nodeaccess_userreference_author_delete', 0);
+  variable_set('nodeaccess_userreference_author_view', $view);
+  variable_set('nodeaccess_userreference_author_update', $update);
+  variable_set('nodeaccess_userreference_author_delete', $delete);
+  drupal_set_message(
+    t(
+      'Node access user reference <a href="!url">settings</a> have changed.',
+      array('!url' => 'admin/config/nodeaccess_userreference')
+    ),
+    'warning'
+  );
+  $ret[] = array(
+    'success' => TRUE,
+    'query' => 'Updating author grants.',
+  );
+  return $ret;
+}
