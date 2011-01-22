@@ -141,7 +141,7 @@ function nodeaccess_userreference_node_access_records($node) {
   $priority = variable_get('nodeaccess_userreference_priority', 0);
   foreach ($bundles as $fields) {
     foreach ($fields as $field) {
-      if ($field['widget']['module'] == 'user_reference') {
+      if ($field['display']['default']['module'] == 'user_reference') {
         $data = nodeaccess_userreference_field_settings($field['field_name']);
         if (!empty($data) && !empty($node->$field['field_name'])) {
           foreach ((array) $node->$field['field_name'] as $language) {
