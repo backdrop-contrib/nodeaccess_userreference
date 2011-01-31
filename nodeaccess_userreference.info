@@ -4,5 +4,3 @@ description = Provides node access through User reference fields.
 core = 7.x
 package = "CCK"
 dependencies[] = user_reference
-files[] = nodeaccess_userreference.install
-files[] = nodeaccess_userreference.module

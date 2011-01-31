@@ -7,74 +7,13 @@
  */
 
 /**
- * Implements hook_menu().
- */
-function nodeaccess_userreference_menu() {
-  $items = array();
-
-  $items['admin/config/people/nodeaccess_userreference'] = array(
-    'title' => 'Node access user reference',
-    'description' => 'Configure Node access user reference.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('nodeaccess_userreference_admin_settings'),
-    'access arguments' => array('administer site configuration'),
-    'type' => MENU_NORMAL_ITEM,
-  );
-
-  return $items;
-}
-
-/**
- * System settings form for Node access user reference.
- */
-function nodeaccess_userreference_admin_settings($form, &$form_state) {
-
-  $form['nodeaccess_userreference_priority'] = array(
-    '#type' => 'weight',
-    '#title' => t('Set node grants priority for Node access user reference'),
-    '#default_value' => variable_get('nodeaccess_userreference_priority', 0),
-    '#description' => t('If you are only using this access control module, you can safely ignore this.
-    If you are using multiple access control modules you can adjust the priority of this module.'),
-  );
-  $form['nodeaccess_userreference_author_view'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Grant <em>view</em> access to node authors'),
-    '#default_value' => variable_get('nodeaccess_userreference_author_view', 1),
-    '#description' => t('Grants <em>view</em> access to authors.  Use this if not using other node access modules to set author access.'),
-  );
-  $form['nodeaccess_userreference_author_update'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Grant <em>edit</em> access to node authors'),
-    '#default_value' => variable_get('nodeaccess_userreference_author_update', 1),
-    '#description' => t('Grants <em>edit</em> access to authors.  Use this if not using other node access modules to set author access.'),
-  );
-  $form['nodeaccess_userreference_author_delete'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Grant <em>delete</em> access to node authors'),
-    '#default_value' => variable_get('nodeaccess_userreference_author_delete', 1),
-    '#description' => t('Grants <em>delete</em> access to authors.  Use this if not using other node access modules to set author access.'),
-  );
-
-  // Add additional submit processing.
-  $form['#submit'][] = 'nodeaccess_userreference_admin_settings_submit';
-
-  return system_settings_form($form);
-}
-
-/**
- * Submit function for the system settings form for nodeaccess_userreference.
- */
-function nodeaccess_userreference_admin_settings_submit() {
-  node_access_needs_rebuild(TRUE);
-}
-
-/**
  * Implements hook_node_grants().
  */
 function nodeaccess_userreference_node_grants($account, $op) {
   $grants = array();
   $grants['nodeaccess_userreference'][] = $account->uid;
   $grants['nodeaccess_userreference_author'][] = $account->uid;
+  $grants['nodeaccess_userreference_all'][] = 1;
   return $grants;
 }
 
@@ -82,38 +21,50 @@ function nodeaccess_userreference_node_grants($account, $op) {
  * Implements hook_form-FORM-ID_alter().
  */
 function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $form_state) {
-  if ($form['#field']['type'] == "user_reference") {
-
-    $data = nodeaccess_userreference_field_settings($form['#field']['field_name']);
-
+  if ($form['#field']['type'] == 'user_reference' && $form['#instance']['entity_type'] == 'node') {
+    $data = nodeaccess_userreference_field_settings($form['#instance']['bundle'], $form['#field']['field_name']);
     $form['field']['settings']['nodeaccess_userreference'] = array(
       '#type' => 'fieldset',
       '#title' => t('Node access user reference'),
     );
-
-    $form['field']['settings']['nodeaccess_userreference']['view'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Grant <em>view</em> node access to user'),
-      '#default_value' => $data['view'],
-      '#description' => t('Give the referenced user access to view the node, if they cannot already do so.'),
+    $form['field']['settings']['nodeaccess_userreference']['referenced'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Grants for referenced users'),
+      '#default_value' => isset($data['referenced']) ? $data['referenced'] : array('view'),
+      '#options' => array(
+        'view' => t('View'),
+        'update' => t('Update'),
+        'delete' => t('Delete'),
+      ),
+      '#description' => t('These content access permissions will be granted to users referenced in the field.'),
     );
-
-    $form['field']['settings']['nodeaccess_userreference']['update'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Grant <em>edit</em> node access to user'),
-      '#default_value' => $data['update'],
-      '#description' => t('Give the referenced user access to edit the node, if they cannot already do so.'),
+    $form['field']['settings']['nodeaccess_userreference']['author'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Grants for author'),
+      '#default_value' => isset($data['author']) ? $data['author'] : array('view', 'update', 'delete'),
+      '#options' => array(
+        'view' => t('View'),
+        'update' => t('Update'),
+        'delete' => t('Delete'),
+      ),
+      '#description' => t('These content access permissions will be granted to the authors of nodes affected by grants given to referenced users.'),
     );
-
-    $form['field']['settings']['nodeaccess_userreference']['delete'] = array(
-      '#type' => 'checkbox',
-      '#title' => t('Grant <em>delete</em> node access to user'),
-      '#default_value' => $data['delete'],
-      '#description' => t('Give the referenced user access to delete the node, if they cannot already do so.'),
+    $form['field']['settings']['nodeaccess_userreference']['all'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Grants for all users'),
+      '#default_value' => isset($data['all']) ? $data['all'] : array('view'),
+      '#options' => array(
+        'view' => t('View'),
+      ),
+      '#description' => t('These content access permissions will be granted to all users for nodes affected by grants given to referenced users.'),
     );
-
+    $form['field']['settings']['nodeaccess_userreference']['priority'] = array(
+      '#type' => 'weight',
+      '#title' => t('Priority'),
+      '#default_value' => isset($data['priority']) ? $data['priority'] : 0,
+      '#description' => t('It is recommended to always leave this set to 0.'),
+    );
     $form['#submit'][] = 'nodeaccess_userreference_form_field_ui_field_edit_form_submit';
-
   }
 }
 
@@ -123,12 +74,52 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
 function nodeaccess_userreference_form_field_ui_field_edit_form_submit($form, &$form_state) {
   $data = &$form_state['values']['field']['settings']['nodeaccess_userreference'];
   $field_name = &$form_state['values']['instance']['field_name'];
-  nodeaccess_userreference_field_settings($field_name, $data);
-  $type = &$form_state['values']['instance']['bundle'];
-  $nodes = node_load_multiple(NULL, array('type' => $type));
+  $bundle_name = &$form_state['values']['instance']['bundle'];
+  nodeaccess_userreference_field_settings($bundle_name, $field_name, $data);
+  $nodes = node_load_multiple(NULL, array('type' => $bundle_name));
   if ($nodes) {
     // Because the field settings have changed we should prompt for a full rebuild.
     node_access_needs_rebuild(TRUE);
+  }
+}
+
+/**
+ * Add node grants in a way that prevents overriding previous iterations.
+ *
+ * @param &$grants
+ *  The grants array where the grant will be added.
+ * @param $realm
+ *  The realm of this grant.
+ * @param $gid
+ *  The grant ID.
+ * @param $priority
+ *  The grant priority.
+ * @param $settings
+ *  An settings array of boolean equivalent values with keys 'view', 'edit',
+ *  and 'delete'.
+ */
+function nodeaccess_userreference_add_grant(&$grants, $realm, $gid, $priority, $settings) {
+  $key = $realm . $gid;
+  if (!isset($grants[$key])) {
+    // Setup the record.
+    $grants[$key] = array(
+      'realm' => $realm,
+      'gid' => $gid,
+      'priority' => $priority,
+      'grant_view' => 0,
+      'grant_update' => 0,
+      'grant_delete' => 0,
+    );
+  }
+  // Add the grants needed, so as not to override previous iterations.
+  if (isset($settings['view']) && $settings['view']) {
+    $grants[$key]['grant_view'] = 1;
+  }
+  if (isset($settings['update']) && $settings['update']) {
+    $grants[$key]['grant_update'] = 1;
+  }
+  if (isset($settings['delete']) && $settings['delete']) {
+    $grants[$key]['grant_delete'] = 1;
   }
 }
 
@@ -138,60 +129,46 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_submit($form, &$
 function nodeaccess_userreference_node_access_records($node) {
   $grants = array();
   $bundles = field_info_instances('node');
-  $priority = variable_get('nodeaccess_userreference_priority', 0);
-  foreach ($bundles as $fields) {
+  foreach ($bundles as $bundle_name => $fields) {
     foreach ($fields as $field) {
       if ($field['display']['default']['module'] == 'user_reference') {
-        $data = nodeaccess_userreference_field_settings($field['field_name']);
+        $data = nodeaccess_userreference_field_settings($bundle_name, $field['field_name']);
         if (!empty($data) && !empty($node->$field['field_name'])) {
+          // Add referenced user grants.
           foreach ((array) $node->$field['field_name'] as $language) {
             foreach ($language as $userreference) {
               if ($userreference['uid']) {
-                $uid = &$userreference['uid'];
-                if (!isset($grants[$uid])) {
-                  // Setup the record.
-                  $grants[$uid] = array(
-                    'realm' => 'nodeaccess_userreference',
-                    'gid' => $uid,
-                    'priority' => $priority,
-                    'grant_view' => 0,
-                    'grant_update' => 0,
-                    'grant_delete' => 0,
-                  );
-                }
-                // Add the grants needed, so as not to override previous iterations.
-                if ($data['view']) {
-                  $grants[$uid]['grant_view'] = 1;
-                }
-                if ($data['update']) {
-                  $grants[$uid]['grant_update'] = 1;
-                }
-                if ($data['delete']) {
-                  $grants[$uid]['grant_delete'] = 1;
-                }
+                nodeaccess_userreference_add_grant(
+                  $grants,
+                  'nodeaccess_userreference',
+                  $userreference['uid'],
+                  $data['priority'],
+                  $data['referenced']
+                );
               }
             }
           }
+          // Add author grants.
+          nodeaccess_userreference_add_grant(
+            $grants,
+            'nodeaccess_userreference_author',
+            $node->uid,
+            $data['priority'],
+            $data['author']
+          );
+          // Add all grants.
+          nodeaccess_userreference_add_grant(
+            $grants,
+            'nodeaccess_userreference_all',
+            1,
+            $data['priority'],
+            $data['all']
+          );
         }
       }
     }
   }
   if (!empty($grants)) {
-    // Store author grants according to configuration.
-    $grant_view = variable_get('nodeaccess_userreference_author_view', 1);
-    $grant_update = variable_get('nodeaccess_userreference_author_update', 1);
-    $grant_delete = variable_get('nodeaccess_userreference_author_delete', 1);
-    if ($grant_view || $grant_update || $grant_delete) {
-      $grants[] = array(
-        'realm' => 'nodeaccess_userreference_author',
-        'gid' => $node->uid,
-        'priority' => $priority,
-        'grant_view' => $grant_view,
-        'grant_update' => $grant_update,
-        'grant_delete' => $grant_delete,
-      );
-    }
-
     return $grants;
   }
   return NULL;
@@ -200,8 +177,8 @@ function nodeaccess_userreference_node_access_records($node) {
 /**
  * Set and get nodeaccess userreference field settings.
  *
- * @param $type_name
- *   The node type.
+ * @param $bundle_name
+ *   The name of the bundle.
  * @param $field_name
  *   The name of the field.
  * @param $variable
@@ -209,14 +186,14 @@ function nodeaccess_userreference_node_access_records($node) {
  * @return
  *   The stored or updated value of the settings for this field.
  */
-function nodeaccess_userreference_field_settings($field_name, $variable = NULL) {
+function nodeaccess_userreference_field_settings($bundle_name, $field_name, $variable = NULL) {
   $data = variable_get('nodeaccess_userreference', NULL);
   if (isset($variable)) {
-    $data[$field_name] = $variable;
+    $data[$bundle_name][$field_name] = $variable;
     variable_set('nodeaccess_userreference', $data);
   }
-  if (isset($data[$field_name])) {
-    return $data[$field_name];
+  if (isset($data[$bundle_name][$field_name])) {
+    return $data[$bundle_name][$field_name];
   }
 }
 
@@ -227,7 +204,17 @@ function nodeaccess_userreference_field_settings($field_name, $variable = NULL) 
  * debugging node grants.
  */
 function nodeaccess_userreference_node_access_explain($row) {
-  if (in_array($row->realm, array('nodeaccess_userreference', 'nodeaccess_userreference_author'))) {
+  if (
+    in_array(
+      $row->realm,
+      array(
+        'nodeaccess_userreference',
+        'nodeaccess_userreference_author',
+        'nodeaccess_userreference_all'
+      )
+    )
+  ) {
+
     foreach (array('view', 'update', 'delete') as $op) {
       $gop = 'grant_' . $op;
       if (!empty($row->$gop)) {
@@ -235,14 +222,17 @@ function nodeaccess_userreference_node_access_explain($row) {
       }
     }
 
-    $account = user_load($row->gid);
     $do = implode('/', $ops);
 
     switch ($row->realm) {
       case 'nodeaccess_userreference':
+        $account = user_load(array('uid' => $row->gid));
         return t('Referenced user %name may !do this node', array('%name' => $account->name, '!do' => $do));
       case 'nodeaccess_userreference_author':
+        $account = user_load(array('uid' => $row->gid));
         return t('Node author %name may !do this node', array('%name' => $account->name, '!do' => $do));
+      case 'nodeaccess_userreference_all':
+        return t('All users may !do this node', array('!do' => $do));
     }
   }
 }
