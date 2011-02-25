@@ -1,4 +1,3 @@
-; $Id$
 
 Node access user reference README
 

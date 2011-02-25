@@ -1,4 +1,3 @@
-; $Id$
 name = Node access user reference
 description = Provides node access through User reference fields.
 core = 7.x
