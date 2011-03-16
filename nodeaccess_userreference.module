@@ -224,6 +224,7 @@ function nodeaccess_userreference_node_access_explain($row) {
     )
   ) {
 
+    $ops = array();
     foreach (array('view', 'update', 'delete') as $op) {
       $gop = 'grant_' . $op;
       if (!empty($row->$gop)) {
