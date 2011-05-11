@@ -134,7 +134,7 @@ function nodeaccess_userreference_node_access_records($node) {
   $bundles = field_info_instances('node');
   foreach ($bundles as $bundle_name => $fields) {
     foreach ($fields as $field) {
-      if ($field['display']['default']['module'] == 'user_reference') {
+      if (isset($field['display']['default']['module']) && $field['display']['default']['module'] == 'user_reference') {
         $data = nodeaccess_userreference_field_settings($bundle_name, $field['field_name']);
         if (!empty($data) && !empty($node->$field['field_name'])) {
           // Add referenced user grants.
