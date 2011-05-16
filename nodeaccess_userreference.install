@@ -116,3 +116,24 @@ function nodeaccess_userreference_update_6301() {
   );
   return $ret;
 }
+
+/**
+ * Implementation of hook_update_N().
+ *
+ * Update settings to include the 'unused' setting.
+ *
+ * @see hook_update_N()
+ */
+function nodeaccess_userreference_update_7301() {
+  $data = variable_get('nodeaccess_userreference', array());
+  foreach ($data as $type => $type_data) {
+    foreach ($type_data as $field => $field_data) {
+      if (!isset($data[$type][$field]['unused'])) {
+        $data[$type][$field]['unused'] = 0;
+      }
+    }
+  }
+  variable_set('nodeaccess_userreference', $data);
+
+  return 'Updating settings.';
+}

@@ -46,7 +46,7 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
         'update' => t('Update'),
         'delete' => t('Delete'),
       ),
-      '#description' => t('These content access permissions will be granted to the authors of nodes affected by grants given to referenced users.'),
+      '#description' => t('These content access permissions will be granted to the authors of nodes.'),
     );
     $form['field']['settings']['nodeaccess_userreference']['all'] = array(
       '#type' => 'checkboxes',
@@ -55,7 +55,17 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
       '#options' => array(
         'view' => t('View'),
       ),
-      '#description' => t('These content access permissions will be granted to all users for nodes affected by grants given to referenced users.'),
+      '#description' => t('These content access permissions will be granted to all users.'),
+    );
+    $form['field']['settings']['nodeaccess_userreference']['unused'] = array(
+      '#type' => 'radios',
+      '#title' => t('When to set grants'),
+      '#default_value' => isset($data['unused']) ? $data['unused'] : 0,
+      '#options' => array(
+        0 => t('When the user reference field is in use'),
+        1 => t('Always'),
+      ),
+      '#description' => t('Determines whether to set grants when the field is not in use.'),
     );
     $form['field']['settings']['nodeaccess_userreference']['priority'] = array(
       '#type' => 'weight',
@@ -155,7 +165,7 @@ function nodeaccess_userreference_node_access_records($node) {
           // These will fire for each non-empty nodeaccess_userreference field,
           // but redundant calls will be correctly handled by the helper function:
           // nodeaccess_userreference_add_grant().
-          if (!empty($grants)) {
+          if ($data['unused'] || !empty($grants)) {
              // Add author grants.
              nodeaccess_userreference_add_grant(
                $grants,
