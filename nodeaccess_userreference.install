@@ -48,11 +48,7 @@ function nodeaccess_userreference_update_6300() {
 }
 
 /**
- * Implements hook_update_N().
- *
  * Update settings storage.
- *
- * @see hook_update_N()
  */
 function nodeaccess_userreference_update_6301() {
   // Get all old settings and move them over to the new storage.
@@ -118,11 +114,7 @@ function nodeaccess_userreference_update_6301() {
 }
 
 /**
- * Implements hook_update_N().
- *
  * Update settings to include the 'unused' setting.
- *
- * @see hook_update_N()
  */
 function nodeaccess_userreference_update_7301() {
   $data = variable_get('nodeaccess_userreference', array());
@@ -139,11 +131,7 @@ function nodeaccess_userreference_update_7301() {
 }
 
 /**
- * Implements hook_update_N().
- *
  * Removed settings for deleted fields.
- *
- * @see hook_update_N()
  */
 function nodeaccess_userreference_update_7302() {
   $info = field_info_instances('node');
@@ -163,3 +151,20 @@ function nodeaccess_userreference_update_7302() {
   return 'Removed settings for deleted fields.';
 }
 
+/**
+ * Added integration for views module.
+ */
+function nodeaccess_userreference_update_7303() {
+  $settings = variable_get('nodeaccess_userreference', array());
+  foreach ($settings as $type => $fields) {
+    foreach ($fields as $field => $data) {
+      $settings[$type][$field]['views']['view'] =
+        $data['views']['view'] ? $data['views']['view'] : '';
+      $settings[$type][$field]['views']['view_args'] =
+        $data['views']['view'] ? $data['views']['view_args'] : '';
+    }
+  }
+  variable_set('nodeaccess_userreference', $settings);
+
+  return 'Added integration for views module.';
+}

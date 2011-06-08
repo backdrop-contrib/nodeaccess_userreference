@@ -1,4 +1,6 @@
 name = Node access user reference
-description = Provides node access through User reference fields.
+description = Provides node access through user reference fields.
 core = 7.x
 dependencies[] = user_reference
+files[]=includes/nodeaccess_userreference_views_plugin_display.inc
+files[]=includes/nodeaccess_userreference_views_plugin_style.inc

@@ -18,15 +18,15 @@ Project page: http://drupal.org/project/nodeaccess_userreference.
 
 INSTALLATION
 ------------
-1. Install User reference from the References project:
+1. Install user reference from the references project:
    http://drupal.org/project/references
 2. Copy nodeaccess_userreference folder to modules directory.
    (Usually 'sites/all/modules')
-3. At 'admin/build/modules' enable the Node access user reference module.
+3. At 'admin/build/modules' enable the node access user reference module.
 
 
 USAGE
 -----
-Create a User reference field in your content type, on the page where you 
+Create a user reference field in your content type, on the page where you 
 configure the properties of your field, you will also see settings for 
 granting access to the referenced user.
