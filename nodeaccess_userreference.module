@@ -220,53 +220,47 @@ function nodeaccess_userreference_add_grant(&$grants, $realm, $gid, $priority, $
  */
 function nodeaccess_userreference_node_access_records($node) {
   $grants = array();
-  $bundles = field_info_instances('node');
-  // @todo: iterate through the settings we have and check if the corresponding
-  //   field exists, rather than iterating all possible fields and checking if
-  //   we have settings.  Note; same goes for nodeaccess_nodereference module.
-  foreach ($bundles as $bundle_name => $fields) {
-    foreach ($fields as $field) {
-      if (isset($field['display']['default']['module']) && $field['display']['default']['module'] == 'user_reference' && !empty($node->$field['field_name'])) {
-        $data = nodeaccess_userreference_field_settings($bundle_name, $field['field_name']);
-        if (!empty($data) && !empty($node->$field['field_name'])) {
-          if (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, $node)) {
-            // Add referenced user grants.
-            foreach ((array) $node->$field['field_name'] as $language) {
-              foreach ($language as $userreference) {
-                if ($userreference['uid']) {
-                  nodeaccess_userreference_add_grant(
-                    $grants,
-                    'nodeaccess_userreference',
-                    $userreference['uid'],
-                    $data['priority'],
-                    $data['referenced']
-                  );
-                }
-              }
-            }
-            // If there are grants set, also add the author and view-all grants.
-            // These will fire for each non-empty nodeaccess_userreference field,
-            // but redundant calls will be correctly handled by the helper function:
-            // nodeaccess_userreference_add_grant().
-            if ($data['unused'] || !empty($grants)) {
-               // Add author grants.
-               nodeaccess_userreference_add_grant(
-                 $grants,
-                 'nodeaccess_userreference_author',
-                 $node->uid,
-                 $data['priority'],
-                 $data['author']
-               );
-               // Add all grants.
-               nodeaccess_userreference_add_grant(
-                 $grants,
-                 'nodeaccess_userreference_all',
-                 1,
-                 $data['priority'],
-                 $data['all']
-               );
+  $bundle_name = $node->type;
+  $fields = field_info_instances('node', $bundle_name);
+  foreach ($fields as $field) {
+    if (isset($field['display']['default']['module']) && $field['display']['default']['module'] == 'user_reference' && !empty($node->$field['field_name'])) {
+      $data = nodeaccess_userreference_field_settings($bundle_name, $field['field_name']);
+      if (!empty($data) && !empty($node->$field['field_name'])) {
+        // Add referenced user grants.
+        foreach ((array) $node->$field['field_name'] as $language) {
+          foreach ($language as $userreference) {
+            if ($userreference['uid']) {
+              nodeaccess_userreference_add_grant(
+                $grants,
+                'nodeaccess_userreference',
+                $userreference['uid'],
+                $data['priority'],
+                $data['referenced']
+              );
             }
           }
+        }
+        // If there are grants set, also add the author and view-all grants.
+        // These will fire for each non-empty nodeaccess_userreference field,
+        // but redundant calls will be correctly handled by the helper function:
+        // nodeaccess_userreference_add_grant().
+        if ($data['unused'] || !empty($grants)) {
+           // Add author grants.
+           nodeaccess_userreference_add_grant(
+             $grants,
+             'nodeaccess_userreference_author',
+             $node->uid,
+             $data['priority'],
+             $data['author']
+           );
+           // Add all grants.
+           nodeaccess_userreference_add_grant(
+             $grants,
+             'nodeaccess_userreference_all',
+             1,
+             $data['priority'],
+             $data['all']
+           );
         }
       }
     }
