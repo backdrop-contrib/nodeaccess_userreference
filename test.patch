@@ -1,0 +1,131 @@
+diff --git a/nodeaccess_userreference.module b/nodeaccess_userreference.module
+index c03ea53..8984a94 100755
+--- a/nodeaccess_userreference.module
++++ b/nodeaccess_userreference.module
+@@ -34,8 +34,11 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
+         'view' => t('View'),
+         'update' => t('Update'),
+         'delete' => t('Delete'),
++        'deny_view' => t('Deny view'),
++        'deny_update' => t('Deny update'),
++        'deny_delete' => t('Deny delete'),
+       ),
+-      '#description' => t('These content access permissions will be granted to users referenced in the field.'),
++      '#description' => t('These content access permissions will be granted to users referenced in the field.  Do not check the <em>deny</em> options unless you want to forcibly deny access to referenced users.'),
+     );
+     $form['field']['settings']['nodeaccess_userreference']['author'] = array(
+       '#type' => 'checkboxes',
+@@ -226,41 +229,43 @@ function nodeaccess_userreference_node_access_records($node) {
+     if (isset($field['display']['default']['module']) && $field['display']['default']['module'] == 'user_reference' && !empty($node->$field['field_name'])) {
+       $data = nodeaccess_userreference_field_settings($bundle_name, $field['field_name']);
+       if (!empty($data) && !empty($node->$field['field_name'])) {
+-        // Add referenced user grants.
+-        foreach ((array) $node->$field['field_name'] as $language) {
+-          foreach ($language as $userreference) {
+-            if ($userreference['uid']) {
+-              nodeaccess_userreference_add_grant(
+-                $grants,
+-                'nodeaccess_userreference',
+-                $userreference['uid'],
+-                $data['priority'],
+-                $data['referenced']
+-              );
++        if (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, $node)) {
++          // Add referenced user grants.
++          foreach ((array) $node->$field['field_name'] as $language) {
++            foreach ($language as $userreference) {
++              if ($userreference['uid']) {
++                nodeaccess_userreference_add_grant(
++                  $grants,
++                  'nodeaccess_userreference',
++                  $userreference['uid'],
++                  $data['priority'],
++                  $data['referenced']
++                );
++              }
+             }
+           }
+-        }
+-        // If there are grants set, also add the author and view-all grants.
+-        // These will fire for each non-empty nodeaccess_userreference field,
+-        // but redundant calls will be correctly handled by the helper function:
+-        // nodeaccess_userreference_add_grant().
+-        if ($data['unused'] || !empty($grants)) {
+-           // Add author grants.
+-           nodeaccess_userreference_add_grant(
+-             $grants,
+-             'nodeaccess_userreference_author',
+-             $node->uid,
+-             $data['priority'],
+-             $data['author']
+-           );
+-           // Add all grants.
+-           nodeaccess_userreference_add_grant(
+-             $grants,
+-             'nodeaccess_userreference_all',
+-             1,
+-             $data['priority'],
+-             $data['all']
+-           );
++          // If there are grants set, also add the author and view-all grants.
++          // These will fire for each non-empty nodeaccess_userreference field,
++          // but redundant calls will be correctly handled by the helper function:
++          // nodeaccess_userreference_add_grant().
++          if ($data['unused'] || !empty($grants)) {
++             // Add author grants.
++             nodeaccess_userreference_add_grant(
++               $grants,
++               'nodeaccess_userreference_author',
++               $node->uid,
++               $data['priority'],
++               $data['author']
++             );
++             // Add all grants.
++             nodeaccess_userreference_add_grant(
++               $grants,
++               'nodeaccess_userreference_all',
++               1,
++               $data['priority'],
++               $data['all']
++             );
++          }
+         }
+       }
+     }
+@@ -272,6 +277,36 @@ function nodeaccess_userreference_node_access_records($node) {
+ }
+ 
+ /**
++ * Implements hook_node_access().
++ *
++ * This is needed for the 'deny' functionality.
++ */
++function nodeaccess_userreference_node_access($node, $op, $account) {
++  if ($op != 'create') {
++    $bundle_name = $node->type;
++    $fields = field_info_instances('node', $bundle_name);
++    foreach ($fields as $field) {
++      if (isset($field['display']['default']['module']) && $field['display']['default']['module'] == 'user_reference' && !empty($node->$field['field_name'])) {
++        $data = nodeaccess_userreference_field_settings($bundle_name, $field['field_name']);
++        $data_key = 'deny_' . $op;
++        if (!empty($data) && $data->$data_key && !empty($node->$field['field_name'])) {
++          if (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, $node)) {
++            foreach ((array) $node->$field['field_name'] as $language) {
++              foreach ($language as $userreference) {
++                if ($userreference['uid'] == $account->uid) {
++                  return NODE_ACCESS_DENY;
++                }
++              }
++            }
++          }
++        }
++      }
++    }
++  }
++  return NODE_ACCESS_IGNORE;
++}
++
++/**
+  * Set and get nodeaccess userreference field settings.
+  *
+  * @param $bundle_name
