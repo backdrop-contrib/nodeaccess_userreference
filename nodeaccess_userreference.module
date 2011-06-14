@@ -223,49 +223,45 @@ function nodeaccess_userreference_add_grant(&$grants, $realm, $gid, $priority, $
  */
 function nodeaccess_userreference_node_access_records($node) {
   $grants = array();
-  $bundle_name = $node->type;
-  $fields = field_info_instances('node', $bundle_name);
-  foreach ($fields as $field) {
-    if (isset($field['display']['default']['module']) && $field['display']['default']['module'] == 'user_reference' && !empty($node->$field['field_name'])) {
-      $data = nodeaccess_userreference_field_settings($bundle_name, $field['field_name']);
-      if (!empty($data) && !empty($node->$field['field_name'])) {
-        if (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, $node)) {
-          // Add referenced user grants.
-          foreach ((array) $node->$field['field_name'] as $language) {
-            foreach ($language as $userreference) {
-              if ($userreference['uid']) {
-                nodeaccess_userreference_add_grant(
-                  $grants,
-                  'nodeaccess_userreference',
-                  $userreference['uid'],
-                  $data['priority'],
-                  $data['referenced']
-                );
-              }
+  $field_data = nodeaccess_userreference_field_settings($node->type);
+  foreach ($field_data as $field_name => &$data) {
+    if (!empty($data) && !empty($node->$field_name)) {
+      if (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, $node)) {
+        // Add referenced user grants.
+        foreach ((array)$node->$field_name as $language) {
+          foreach ($language as $user_reference) {
+            if ($user_reference['uid']) {
+              nodeaccess_userreference_add_grant(
+                $grants,
+                'nodeaccess_userreference',
+                $user_reference['uid'],
+                $data['priority'],
+                $data['referenced']
+              );
             }
           }
-          // If there are grants set, also add the author and view-all grants.
-          // These will fire for each non-empty nodeaccess_userreference field,
-          // but redundant calls will be correctly handled by the helper function:
-          // nodeaccess_userreference_add_grant().
-          if ($data['unused'] || !empty($grants)) {
-             // Add author grants.
-             nodeaccess_userreference_add_grant(
-               $grants,
-               'nodeaccess_userreference_author',
-               $node->uid,
-               $data['priority'],
-               $data['author']
-             );
-             // Add all grants.
-             nodeaccess_userreference_add_grant(
-               $grants,
-               'nodeaccess_userreference_all',
-               1,
-               $data['priority'],
-               $data['all']
-             );
-          }
+        }
+        // If there are grants set, also add the author and view-all grants.
+        // These will fire for each non-empty nodeaccess_userreference field,
+        // but redundant calls will be correctly handled by the helper function:
+        // nodeaccess_userreference_add_grant().
+        if ($data['unused'] || !empty($grants)) {
+           // Add author grants.
+           nodeaccess_userreference_add_grant(
+             $grants,
+             'nodeaccess_userreference_author',
+             $node->uid,
+             $data['priority'],
+             $data['author']
+           );
+           // Add all grants.
+           nodeaccess_userreference_add_grant(
+             $grants,
+             'nodeaccess_userreference_all',
+             1,
+             $data['priority'],
+             $data['all']
+           );
         }
       }
     }
@@ -283,17 +279,15 @@ function nodeaccess_userreference_node_access_records($node) {
  */
 function nodeaccess_userreference_node_access($node, $op, $account) {
   if ($op != 'create') {
-    $bundle_name = $node->type;
-    $fields = field_info_instances('node', $bundle_name);
-    foreach ($fields as $field) {
-      if (isset($field['display']['default']['module']) && $field['display']['default']['module'] == 'user_reference' && !empty($node->$field['field_name'])) {
-        $data = nodeaccess_userreference_field_settings($bundle_name, $field['field_name']);
-        $data_key = 'deny_' . $op;
-        if (!empty($data) && $data->$data_key && !empty($node->$field['field_name'])) {
-          if (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, $node)) {
-            foreach ((array) $node->$field['field_name'] as $language) {
-              foreach ($language as $userreference) {
-                if ($userreference['uid'] == $account->uid) {
+    $field_data = nodeaccess_userreference_field_settings($node->type);
+    $data_key = 'deny_' . $op;
+    foreach ($field_data as $field_name => &$data) {
+      if (!empty($data) && $data->$data_key && !empty($node->$field_name)) {
+        if (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, $node)) {
+          // Add referenced user grants.
+          foreach ((array)$node->$field_name as $language) {
+            foreach ($language as $user_reference) {
+                if ($user_reference['uid'] == $account->uid) {
                   return NODE_ACCESS_DENY;
                 }
               }
@@ -318,14 +312,19 @@ function nodeaccess_userreference_node_access($node, $op, $account) {
  * @return
  *   The stored or updated value of the settings for this field.
  */
-function nodeaccess_userreference_field_settings($bundle_name, $field_name, $variable = NULL) {
+function nodeaccess_userreference_field_settings($bundle_name, $field_name = NULL, $variable = NULL) {
   $data = variable_get('nodeaccess_userreference', NULL);
-  if (isset($variable)) {
-    $data[$bundle_name][$field_name] = $variable;
-    variable_set('nodeaccess_userreference', $data);
+  if (!is_null($field_name)) {
+    if (isset($variable)) {
+      $data[$bundle_name][$field_name] = $variable;
+      variable_set('nodeaccess_userreference', $data);
+    }
+    if (isset($data[$bundle_name][$field_name])) {
+      return $data[$bundle_name][$field_name];
+    }
   }
-  if (isset($data[$bundle_name][$field_name])) {
-    return $data[$bundle_name][$field_name];
+  elseif (isset($data[$bundle_name])) {
+    return $data[$bundle_name];
   }
 }
 
