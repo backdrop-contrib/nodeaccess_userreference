@@ -29,7 +29,7 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
     $form['field']['settings']['nodeaccess_userreference']['referenced'] = array(
       '#type' => 'checkboxes',
       '#title' => t('Grants for referenced users'),
-      '#default_value' => isset($data['referenced']) ? $data['referenced'] : array('view'),
+      '#default_value' => isset($data['referenced']) ? $data['referenced'] : array(),
       '#options' => array(
         'view' => t('View'),
         'update' => t('Update'),
@@ -43,7 +43,7 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
     $form['field']['settings']['nodeaccess_userreference']['author'] = array(
       '#type' => 'checkboxes',
       '#title' => t('Grants for author'),
-      '#default_value' => isset($data['author']) ? $data['author'] : array('view', 'update', 'delete'),
+      '#default_value' => isset($data['author']) ? $data['author'] : array(),
       '#options' => array(
         'view' => t('View'),
         'update' => t('Update'),
