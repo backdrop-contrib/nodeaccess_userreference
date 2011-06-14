@@ -20,11 +20,7 @@ function nodeaccess_userreference_uninstall() {
 }
 
 /**
- * Implements hook_update_N().
- *
  * Unset author grants for updated installations.
- *
- * @see hook_update_N()
  */
 function nodeaccess_userreference_update_6300() {
   // Set author grants to 0, unless already set.
@@ -159,12 +155,35 @@ function nodeaccess_userreference_update_7303() {
   foreach ($settings as $type => $fields) {
     foreach ($fields as $field => $data) {
       $settings[$type][$field]['views']['view'] =
-        $data['views']['view'] ? $data['views']['view'] : '';
+        isset($data['views']['view']) ? $data['views']['view'] : '';
       $settings[$type][$field]['views']['view_args'] =
-        $data['views']['view'] ? $data['views']['view_args'] : '';
+        isset($data['views']['view']) ? $data['views']['view_args'] : '';
     }
   }
   variable_set('nodeaccess_userreference', $settings);
 
   return 'Added integration for views module.';
+}
+
+/**
+ * Added deny access options to settings.
+ */
+function nodeaccess_userreference_update_7304() {
+  $settings = variable_get('nodeaccess_userreference', array());
+  foreach ($settings as $type => $fields) {
+    foreach ($fields as $field => $data) {
+      $settings[$type][$field]['deny_view'] =
+        isset($settings[$type][$field]['deny_view']) ?
+        $settings[$type][$field]['deny_view'] : 0;
+      $settings[$type][$field]['deny_update'] =
+        isset($settings[$type][$field]['deny_update']) ?
+        $settings[$type][$field]['deny_update'] : 0;
+      $settings[$type][$field]['deny_delete'] =
+        isset($settings[$type][$field]['deny_delete']) ?
+        $settings[$type][$field]['deny_delete'] : 0;
+    }
+  }
+  variable_set('nodeaccess_userreference', $settings);
+
+  return 'Added deny access options to settings.';
 }

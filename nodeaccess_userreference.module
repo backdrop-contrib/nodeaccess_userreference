@@ -287,9 +287,8 @@ function nodeaccess_userreference_node_access($node, $op, $account) {
           // Add referenced user grants.
           foreach ((array)$node->$field_name as $language) {
             foreach ($language as $user_reference) {
-                if ($user_reference['uid'] == $account->uid) {
-                  return NODE_ACCESS_DENY;
-                }
+              if ($user_reference['uid'] == $account->uid) {
+                return NODE_ACCESS_DENY;
               }
             }
           }
