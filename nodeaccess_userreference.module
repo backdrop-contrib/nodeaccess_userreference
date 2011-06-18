@@ -282,7 +282,7 @@ function nodeaccess_userreference_node_access($node, $op, $account) {
     $field_data = nodeaccess_userreference_field_settings($node->type);
     $data_key = 'deny_' . $op;
     foreach ($field_data as $field_name => &$data) {
-      if (!empty($data) && $data->$data_key && !empty($node->$field_name)) {
+      if (isset($data->$data_key) && $data->$data_key && isset($node->$field_name)) {
         if (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, $node)) {
           // Add referenced user grants.
           foreach ((array)$node->$field_name as $language) {
