@@ -242,11 +242,21 @@ function nodeaccess_userreference_node_access_records($node) {
               }
             }
           }
+          if ($data['unused']) {
+            // Add a dummy grant for user 1 to block other users' access.
+            nodeaccess_userreference_add_grant(
+              $grants,
+              'nodeaccess_userreference',
+              1,
+              $data['priority'],
+              $data['referenced']
+            );
+          }
           // If there are grants set, also add the author and view-all grants.
           // These will fire for each non-empty nodeaccess_userreference field,
           // but redundant calls will be correctly handled by the helper function:
           // nodeaccess_userreference_add_grant().
-          if ($data['unused'] || !empty($grants)) {
+          if (!empty($grants)) {
              // Add author grants.
              nodeaccess_userreference_add_grant(
                $grants,
