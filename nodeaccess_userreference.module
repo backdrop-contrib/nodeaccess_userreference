@@ -227,6 +227,8 @@ function nodeaccess_userreference_node_access_records($node) {
   if (!empty($field_data)) {
     foreach ($field_data as $field_name => &$data) {
       if (!empty($data) && (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, $node))) {
+
+        /*
         if (!empty($node->$field_name)) {
           // Add referenced user grants.
           foreach ($node->$field_name as $language) {
@@ -243,6 +245,24 @@ function nodeaccess_userreference_node_access_records($node) {
             }
           }
         }
+        */
+
+        // Add referenced user grants.
+        $items = field_get_items('node', $node, $field_name);
+        if (!empty($items)) {
+          foreach ($items as &$user_reference) {
+            if ($user_reference['uid']) {
+              nodeaccess_userreference_add_grant(
+                $grants,
+                'nodeaccess_userreference',
+                $user_reference['uid'],
+                $data['priority'],
+                $data['referenced']
+              );
+            }
+          }
+        }
+
         if ($data['unused']) {
           // Add a dummy grant for user 1 to block other users' access.
           nodeaccess_userreference_add_grant(
