@@ -226,10 +226,10 @@ function nodeaccess_userreference_node_access_records($node) {
   $field_data = nodeaccess_userreference_field_settings($node->type);
   if (!empty($field_data)) {
     foreach ($field_data as $field_name => &$data) {
-      if (!empty($data) && !empty($node->$field_name)) {
-        if (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, $node)) {
+      if (!empty($data) && (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, $node))) {
+        if (!empty($node->$field_name)) {
           // Add referenced user grants.
-          foreach ((array)$node->$field_name as $language) {
+          foreach ($node->$field_name as $language) {
             foreach ($language as $user_reference) {
               if ($user_reference['uid']) {
                 nodeaccess_userreference_add_grant(
@@ -242,38 +242,38 @@ function nodeaccess_userreference_node_access_records($node) {
               }
             }
           }
-          if ($data['unused']) {
-            // Add a dummy grant for user 1 to block other users' access.
-            nodeaccess_userreference_add_grant(
-              $grants,
-              'nodeaccess_userreference',
-              1,
-              $data['priority'],
-              $data['referenced']
-            );
-          }
-          // If there are grants set, also add the author and view-all grants.
-          // These will fire for each non-empty nodeaccess_userreference field,
-          // but redundant calls will be correctly handled by the helper function:
-          // nodeaccess_userreference_add_grant().
-          if (!empty($grants)) {
-             // Add author grants.
-             nodeaccess_userreference_add_grant(
-               $grants,
-               'nodeaccess_userreference_author',
-               $node->uid,
-               $data['priority'],
-               $data['author']
-             );
-             // Add all grants.
-             nodeaccess_userreference_add_grant(
-               $grants,
-               'nodeaccess_userreference_all',
-               1,
-               $data['priority'],
-               $data['all']
-             );
-          }
+        }
+        if ($data['unused']) {
+          // Add a dummy grant for user 1 to block other users' access.
+          nodeaccess_userreference_add_grant(
+            $grants,
+            'nodeaccess_userreference',
+            1,
+            $data['priority'],
+            $data['referenced']
+          );
+        }
+        // If there are grants set, also add the author and view-all grants.
+        // These will fire for each non-empty nodeaccess_userreference field,
+        // but redundant calls will be correctly handled by the helper function:
+        // nodeaccess_userreference_add_grant().
+        if (!empty($grants)) {
+           // Add author grants.
+           nodeaccess_userreference_add_grant(
+             $grants,
+             'nodeaccess_userreference_author',
+             $node->uid,
+             $data['priority'],
+             $data['author']
+           );
+           // Add all grants.
+           nodeaccess_userreference_add_grant(
+             $grants,
+             'nodeaccess_userreference_all',
+             1,
+             $data['priority'],
+             $data['all']
+           );
         }
       }
     }
