@@ -58,6 +58,7 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
       ),
       '#description' => t('These content access permissions will be granted to the authors of nodes.'),
     );
+
     $form['field']['settings']['nodeaccess_userreference']['all'] = array(
       '#type' => 'checkboxes',
       '#title' => t('Grants for all users'),
@@ -66,10 +67,9 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
         'view' => t('View'),
       ),
       '#description' => t(
-          'These content access permissions will be granted to all users including %anon.',
-          array(
-            '%anon' => array(format_username(drupal_anonymous_user()),
-          )
+        'These content access permissions will be granted to all users including %anon.',
+        array(
+          '%anon' => format_username(drupal_anonymous_user()),
         )
       ),
     );
