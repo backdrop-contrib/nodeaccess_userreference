@@ -11,6 +11,7 @@
  */
 function nodeaccess_userreference_uninstall() {
   variable_del('nodeaccess_userreference');
+  variable_del('nodeaccess_userreference_create');
 
   // Old vars.
   variable_del('nodeaccess_userreference_priority');

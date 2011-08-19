@@ -23,7 +23,7 @@ class nodeaccess_userreference_views_plugin_display extends views_plugin_display
 
     // Restrict by supplied entity id.
     $alias = $this->view->query->ensure_table($options['table']);
-    $this->view->query->add_where(NULL, "$alias.$options[field_id]", $options['id'], '=');
+    $this->view->query->add_where(NULL, "$alias.$options[field_id]", $options['ids'], 'IN');
 
   }
 }

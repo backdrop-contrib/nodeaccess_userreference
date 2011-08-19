@@ -28,7 +28,7 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
     );
     $form['field']['settings']['nodeaccess_userreference']['referenced'] = array(
       '#type' => 'checkboxes',
-      '#title' => t('Grants for referenced users'),
+      '#title' => t('Grants for referenced users on the node'),
       '#default_value' => isset($data['referenced']) ? $data['referenced'] : array(),
       '#options' => array(
         'view' => t('View'),
@@ -38,7 +38,14 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
         'deny_update' => t('Deny update'),
         'deny_delete' => t('Deny delete'),
       ),
-      '#description' => t('These content access permissions will be granted to users referenced in the field.  Do not check the <em>deny</em> options unless you want to forcibly deny access to referenced users.'),
+      '#description' => t('These content access permissions will be granted to users referenced in the field.  These permissions apply to the node on which the field values are set.  Do not check the <em>deny</em> options unless you want to forcibly deny access to referenced users.'),
+    );
+    $form['field']['settings']['nodeaccess_userreference']['create'] = array(
+      '#type' => 'checkboxes',
+      '#title' => t('Grants for referenced users to create content'),
+      '#default_value' => isset($data['create']) ? $data['create'] : array(),
+      '#options' => node_type_get_names(),
+      '#description' => t('These content access permissions will be granted to users referenced in the field.  These permissions apply to the content types selected.'),
     );
     $form['field']['settings']['nodeaccess_userreference']['author'] = array(
       '#type' => 'checkboxes',
@@ -58,7 +65,13 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
       '#options' => array(
         'view' => t('View'),
       ),
-      '#description' => t('These content access permissions will be granted to all users.'),
+      '#description' => t(
+          'These content access permissions will be granted to all users including %anon.',
+          array(
+            '%anon' => array(format_username(drupal_anonymous_user()),
+          )
+        )
+      ),
     );
     $form['field']['settings']['nodeaccess_userreference']['unused'] = array(
       '#type' => 'radios',
@@ -226,26 +239,7 @@ function nodeaccess_userreference_node_access_records($node) {
   $field_data = nodeaccess_userreference_field_settings($node->type);
   if (!empty($field_data)) {
     foreach ($field_data as $field_name => &$data) {
-      if (!empty($data) && (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, $node))) {
-
-        /*
-        if (!empty($node->$field_name)) {
-          // Add referenced user grants.
-          foreach ($node->$field_name as $language) {
-            foreach ($language as $user_reference) {
-              if ($user_reference['uid']) {
-                nodeaccess_userreference_add_grant(
-                  $grants,
-                  'nodeaccess_userreference',
-                  $user_reference['uid'],
-                  $data['priority'],
-                  $data['referenced']
-                );
-              }
-            }
-          }
-        }
-        */
+      if (!empty($data) && (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, array($node->nid)))) {
 
         // Add referenced user grants.
         $items = field_get_items('node', $node, $field_name);
@@ -306,22 +300,56 @@ function nodeaccess_userreference_node_access_records($node) {
 
 /**
  * Implements hook_node_access().
- *
- * This is needed for the 'deny' functionality.
  */
 function nodeaccess_userreference_node_access($node, $op, $account) {
   if ($op != 'create') {
+    // 'deny' functionality.
     $field_data = nodeaccess_userreference_field_settings($node->type);
     if (!empty($field_data)) {
       $data_key = 'deny_' . $op;
       foreach ($field_data as $field_name => &$data) {
-        if (isset($data->$data_key) && $data->$data_key && isset($node->$field_name)) {
-          if (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, $node)) {
-            // Add referenced user grants.
-            foreach ((array)$node->$field_name as $language) {
-              foreach ($language as $user_reference) {
-                if ($user_reference['uid'] == $account->uid) {
-                  return NODE_ACCESS_DENY;
+        if (!empty($data->$data_key) && (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, array($node->nid)))) {
+          // Add referenced user grants.
+          $items = field_get_items('node', $node, $field_name);
+          if (!empty($items)) {
+            foreach ($items as &$user_reference) {
+              if ($user_reference['uid'] == $account->uid) {
+                return NODE_ACCESS_DENY;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  else {
+    // $op == 'create'.
+    $field_data = nodeaccess_userreference_field_settings($node);
+    if (!empty($field_data)) {
+      foreach ($field_data as $field_name => &$data) {
+        if (!empty($data->create[$node])) {
+          // Add referenced user grants.
+          $items = field_get_items('node', $node, $field_name);
+          if (!empty($items)) {
+            foreach ($items as &$user_reference) {
+              if ($user_reference['uid'] == $account->uid) {
+                $sql = 'SELECT DISTINCT fd.entity_id ' .
+                  'FROM {field_data_' . $field_name . '} fd ' .
+                  'INNER JOIN {node} n ON n.vid = fd.revision_id ' .
+                  'WHERE fd.' . $field_name . '_uid = :uid';
+                $args = array(':uid' => $account->uid);
+                $result = db_query($sql, $args);
+                if (empty($data['views']['view']) && $result->rowCount()) {
+                  // Simple case, a row exists, so we allow.
+                  return NODE_ACCESS_ALLOW;
+                }
+                else {
+                  // They are using views to restrict affected nodes.
+                  $nids = $result->fetchCol();
+                  if (!empty($nids) && nodeaccess_userreference_node_in_field_view($data, $nids)) {
+                    // At least one of the nodes is in the view, so allow.
+                    return NODE_ACCESS_ALLOW;
+                  }
                 }
               }
             }
@@ -429,16 +457,16 @@ function nodeaccess_userreference_views_api() {
 }
 
 /**
- * Determine if the node falls into the view configured in the field settings.
+ * Determine if any node falls into the view configured in the field settings.
  *
  * @param $data
  *  The node access user reference settings for the field.
- * @param $node
- *  The node object.
+ * @param $nids
+ *  Array of node ids.
  * @return
  *  Boolean indicating if the entity is in the view defined by the field config.
  */
-function nodeaccess_userreference_node_in_field_view($data, $node) {
+function nodeaccess_userreference_node_in_field_view($data, $nids) {
   $view_id = $data['views']['view'];
   list($view_name, $view_display) = explode(':', $view_id);
 
@@ -463,7 +491,7 @@ function nodeaccess_userreference_node_in_field_view($data, $node) {
     $options = array(
       'table' => 'node',
       'field_id' => 'nid',
-      'id' => $node->nid,
+      'ids' => $nids,
     );
 
     $view->display_handler->set_option('nodeaccess_userreference_options', $options);
