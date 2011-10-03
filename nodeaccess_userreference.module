@@ -40,6 +40,16 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
       ),
       '#description' => t('These content access permissions will be granted to users referenced in the field.  These permissions apply to the node on which the field values are set.  Do not check the <em>deny</em> options unless you want to forcibly deny access to referenced users.'),
     );
+    $form['field']['settings']['nodeaccess_userreference']['referenced_published'] = array(
+      '#type' => 'select',
+      '#title' => t('Unpublished nodes'),
+      '#title_display' => 'none',
+      '#default_value' => isset($data['referenced_published']) ? $data['referenced_published'] : 0,
+      '#options' => array(
+        0 => t('Give these grants for published nodes only'),
+        1 => t('Give these grants for published and unpublished nodes'),
+      ),
+    );
     $form['field']['settings']['nodeaccess_userreference']['create'] = array(
       '#type' => 'checkboxes',
       '#title' => t('Grants for referenced users to create content'),
@@ -58,7 +68,16 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
       ),
       '#description' => t('These content access permissions will be granted to the authors of nodes.'),
     );
-
+    $form['field']['settings']['nodeaccess_userreference']['author_published'] = array(
+      '#type' => 'select',
+      '#title' => t('Unpublished nodes'),
+      '#title_display' => 'none',
+      '#default_value' => isset($data['author_published']) ? $data['author_published'] : 0,
+      '#options' => array(
+        0 => t('Give these grants for published nodes only'),
+        1 => t('Give these grants for published and unpublished nodes'),
+      ),
+    );
     $form['field']['settings']['nodeaccess_userreference']['all'] = array(
       '#type' => 'checkboxes',
       '#title' => t('Grants for all users'),
@@ -71,6 +90,16 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
         array(
           '%anon' => format_username(drupal_anonymous_user()),
         )
+      ),
+    );
+    $form['field']['settings']['nodeaccess_userreference']['all_published'] = array(
+      '#type' => 'select',
+      '#title' => t('Unpublished nodes'),
+      '#title_display' => 'none',
+      '#default_value' => isset($data['all_published']) ? $data['all_published'] : 0,
+      '#options' => array(
+        0 => t('Give these grants for published nodes only'),
+        1 => t('Give these grants for published and unpublished nodes'),
       ),
     );
     $form['field']['settings']['nodeaccess_userreference']['unused'] = array(
@@ -241,20 +270,24 @@ function nodeaccess_userreference_node_access_records($node) {
     foreach ($field_data as $field_name => &$data) {
       if (!empty($data) && (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, array($node->nid)))) {
 
-        // Add referenced user grants.
-        $items = field_get_items('node', $node, $field_name);
-        if (!empty($items)) {
-          foreach ($items as &$user_reference) {
-            if ($user_reference['uid']) {
-              nodeaccess_userreference_add_grant(
-                $grants,
-                'nodeaccess_userreference',
-                $user_reference['uid'],
-                $data['priority'],
-                $data['referenced']
-              );
+        if (!empty($node->status) || !empty($data['referenced_published'])) {
+
+          // Add referenced user grants.
+          $items = field_get_items('node', $node, $field_name);
+          if (!empty($items)) {
+            foreach ($items as &$user_reference) {
+              if ($user_reference['uid']) {
+                nodeaccess_userreference_add_grant(
+                  $grants,
+                  'nodeaccess_userreference',
+                  $user_reference['uid'],
+                  $data['priority'],
+                  $data['referenced']
+                );
+              }
             }
           }
+
         }
 
         if ($data['unused']) {
@@ -272,22 +305,26 @@ function nodeaccess_userreference_node_access_records($node) {
         // but redundant calls will be correctly handled by the helper function:
         // nodeaccess_userreference_add_grant().
         if (!empty($grants)) {
-           // Add author grants.
-           nodeaccess_userreference_add_grant(
-             $grants,
-             'nodeaccess_userreference_author',
-             $node->uid,
-             $data['priority'],
-             $data['author']
-           );
-           // Add all grants.
-           nodeaccess_userreference_add_grant(
-             $grants,
-             'nodeaccess_userreference_all',
-             1,
-             $data['priority'],
-             $data['all']
-           );
+          if (!empty($node->status) || !empty($data['author_published'])) {
+            // Add author grants.
+            nodeaccess_userreference_add_grant(
+              $grants,
+              'nodeaccess_userreference_author',
+              $node->uid,
+              $data['priority'],
+              $data['author']
+            );
+          }
+          if (!empty($node->status) || !empty($data['all_published'])) {
+            // Add all grants.
+            nodeaccess_userreference_add_grant(
+              $grants,
+              'nodeaccess_userreference_all',
+              1,
+              $data['priority'],
+              $data['all']
+            );
+          }
         }
       }
     }
