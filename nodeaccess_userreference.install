@@ -188,3 +188,19 @@ function nodeaccess_userreference_update_7304() {
 
   return 'Added deny access options to settings.';
 }
+
+/**
+ * Implements hook_requirements().
+ */
+function nodeaccess_userreference_requirements() {
+  $requirements = array();
+  if (!module_exists('user_reference') && !module_exists('entityreference')) {
+    $t = get_t();
+    $requirements['user_reference'] = array(
+      'title' => $t('User reference module'), 
+      'severity' => REQUIREMENT_ERROR,
+      'description' => $t('You need a module to reference users.  Use either <em>Entity reference</em> or <em>References</em>.'),
+    );
+  }
+  return $requirements;
+}

@@ -20,7 +20,15 @@ function nodeaccess_userreference_node_grants($account, $op) {
  * Implements hook_form-FORM-ID_alter().
  */
 function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $form_state) {
-  if ($form['#field']['type'] == 'user_reference' && $form['#instance']['entity_type'] == 'node') {
+  if (
+    (
+      ($form['#field']['type'] == 'entityreference' && $form['#field']['settings']['target_type'] == 'user') 
+      || 
+      $form['#field']['type'] == 'user_reference'
+    ) 
+    && 
+    $form['#instance']['entity_type'] == 'node'
+  ) {
     $data = nodeaccess_userreference_field_settings($form['#instance']['bundle'], $form['#field']['field_name']);
     $form['instance']['settings']['nodeaccess_userreference'] = array(
       '#type' => 'fieldset',
@@ -276,11 +284,20 @@ function nodeaccess_userreference_node_access_records($node) {
           $items = field_get_items('node', $node, $field_name);
           if (!empty($items)) {
             foreach ($items as &$user_reference) {
-              if ($user_reference['uid']) {
+              $uid = NULL;
+              // user_reference
+              if (isset($user_reference['uid'])) {
+                $uid = $user_reference['uid'];
+              }
+              // entityreference
+              elseif (isset($user_reference['target_id'])) {
+                $uid = $user_reference['target_id']; 
+              }
+              if ($uid) {
                 nodeaccess_userreference_add_grant(
                   $grants,
                   'nodeaccess_userreference',
-                  $user_reference['uid'],
+                  $uid,
                   $data['priority'],
                   $data['referenced']
                 );

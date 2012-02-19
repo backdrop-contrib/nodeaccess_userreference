@@ -5,7 +5,7 @@ CONTENTS OF THIS FILE
 ----------------------
 
   * Introduction
-  * Dependencies
+  * Requirements
   * Installation
   * Usage
   
@@ -18,10 +18,12 @@ with user reference.
 Project page: http://drupal.org/project/nodeaccess_userreference.
 
 
-DEPENDENCIES
+REQUIREMENTS
 ------------
-This module requires the User reference module which is part of the References
-project: http://drupal.org/project/references
+This module requires a field module that can reference users.  Currently there 
+are two modules supported:
+http://drupal.org/project/entityreference
+http://drupal.org/project/references
 
 
 INSTALLATION
@@ -33,7 +35,7 @@ http://drupal.org/documentation/install/modules-themes/modules-7
 
 USAGE
 -----
-Create a User reference field in a content type using the Field UI.  The field's
+Create a field to reference users in a content type using the Field UI.  The field's
 configuration page will contain the settings for Node access user reference.
 For detailed instructions on using the Field UI see:
 http://drupal.org/documentation/modules/field-ui
