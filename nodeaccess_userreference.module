@@ -163,7 +163,6 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
       '#default_value' => isset($data['priority']) ? $data['priority'] : 0,
       '#description' => t('It is recommended to always leave this set to 0.'),
     );
-    $form['#submit'][] = 'nodeaccess_userreference_form_field_ui_field_edit_form_submit';
   }
 }
 
@@ -182,7 +181,7 @@ function nodeaccess_userreference_views_displays($base_table) {
         // Get display title.
        $display_title = nodeaccess_userreference_views_display_title($view_name, $view, $display_key);
         // Append $id to the title for disambiguation in lists.
-        $display_title .= ' ['. $id . ']';
+        $display_title .= ' [' . $id . ']';
 
         if ($view->type == 'Default') {
           $views[t('Default views')][$id] = $display_title;
@@ -204,32 +203,22 @@ function nodeaccess_userreference_views_display_title($view_name, $view, $displa
   $display_title = $view->get_title();
   if (!$display_title) {
     // No title, we have to construct a title.
-    $display_title = ucfirst($view_name) ." ". strtolower($view->display[$display_name]->display_title);
+    $display_title = ucfirst($view_name) . ' ' . strtolower($view->display[$display_name]->display_title);
   }
   return $display_title;
-}
-
-/**
- * Extra submit function for User reference field config.
- */
-function nodeaccess_userreference_form_field_ui_field_edit_form_submit($form, &$form_state) {
-  $data = &$form_state['values']['instance']['settings']['nodeaccess_userreference'];
-  $field_name = &$form_state['values']['instance']['field_name'];
-  $bundle_name = &$form_state['values']['instance']['bundle'];
-  nodeaccess_userreference_field_settings($bundle_name, $field_name, $data);
-  $nodes = node_load_multiple(NULL, array('type' => $bundle_name));
-  if ($nodes) {
-    // Because the field settings have changed we should prompt for a full rebuild.
-    node_access_needs_rebuild(TRUE);
-  }
 }
 
 /**
  * Implements hook_field_update_instance().
  */
 function nodeaccess_userreference_field_update_instance($instance, $prior_instance) {
-  // Trigger discovery of settings in case this is an imported content type.
-  nodeaccess_userreference_field_settings($instance['bundle'], $instance['field_name']);
+  nodeaccess_userreference_field_settings($instance['bundle'], $instance['field_name'], $instance['settings']['nodeaccess_userreference']);
+
+  $nodes = node_load_multiple(NULL, array('type' => $instance['bundle']));
+  if ($nodes) {
+    // Because the field settings have changed we should prompt for a full rebuild.
+    node_access_needs_rebuild(TRUE);
+  }
 }
 
 /**
@@ -459,15 +448,6 @@ function nodeaccess_userreference_field_settings($bundle_name, $field_name = NUL
     }
     if (isset($data[$bundle_name][$field_name])) {
       return $data[$bundle_name][$field_name];
-    }
-    else {
-      // Failsafe, get data from imported content types and store for future.
-      $instance = field_info_instance('node', $field_name, $bundle_name);
-      if (isset($instance['settings']['nodeaccess_userreference'])) {
-        $data[$bundle_name][$field_name] = $instance['settings']['nodeaccess_userreference'];
-        variable_set('nodeaccess_userreference', $data);
-        return $data[$bundle_name][$field_name];
-      }
     }
   }
   elseif (isset($data[$bundle_name])) {
