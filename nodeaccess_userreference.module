@@ -22,11 +22,11 @@ function nodeaccess_userreference_node_grants($account, $op) {
 function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $form_state) {
   if (
     (
-      ($form['#field']['type'] == 'entityreference' && $form['#field']['settings']['target_type'] == 'user') 
-      || 
+      ($form['#field']['type'] == 'entityreference' && $form['#field']['settings']['target_type'] == 'user')
+      ||
       $form['#field']['type'] == 'user_reference'
-    ) 
-    && 
+    )
+    &&
     $form['#instance']['entity_type'] == 'node'
   ) {
     $data = nodeaccess_userreference_field_settings($form['#instance']['bundle'], $form['#field']['field_name']);
@@ -291,7 +291,7 @@ function nodeaccess_userreference_node_access_records($node) {
               }
               // entityreference
               elseif (isset($user_reference['target_id'])) {
-                $uid = $user_reference['target_id']; 
+                $uid = $user_reference['target_id'];
               }
               if ($uid) {
                 nodeaccess_userreference_add_grant(
@@ -451,6 +451,15 @@ function nodeaccess_userreference_field_settings($bundle_name, $field_name = NUL
     }
     if (isset($data[$bundle_name][$field_name])) {
       return $data[$bundle_name][$field_name];
+    }
+    else {
+      // Failsafe, get data from imported content types and store for future.
+      $instance = field_info_instance('node', $field_name, $bundle_name);
+      if (isset($instance['settings']['nodeaccess_userreference'])) {
+        $data[$bundle_name][$field_name] = $instance['settings']['nodeaccess_userreference'];
+        variable_set('nodeaccess_userreference', $data);
+        return $data[$bundle_name][$field_name];
+      }
     }
   }
   elseif (isset($data[$bundle_name])) {
