@@ -378,33 +378,48 @@ function nodeaccess_userreference_node_access($node, $op, $account) {
   }
   else {
     // $op == 'create'.
-    $field_data = nodeaccess_userreference_field_settings($node);
-    if (!empty($field_data)) {
-      foreach ($field_data as $field_name => &$data) {
-        if (!empty($data->create[$node])) {
-          // Add referenced user grants.
-          $items = field_get_items('node', $node, $field_name);
-          if (!empty($items)) {
-            foreach ($items as &$user_reference) {
-              if ($user_reference['uid'] == $account->uid) {
-                $sql = 'SELECT DISTINCT fd.entity_id ' .
-                  'FROM {field_data_' . $field_name . '} fd ' .
-                  'INNER JOIN {node} n ON n.vid = fd.revision_id ' .
-                  'WHERE fd.' . $field_name . '_uid = :uid';
-                $args = array(':uid' => $account->uid);
-                $result = db_query($sql, $args);
-                if (empty($data['views']['view']) && $result->rowCount()) {
-                  // Simple case, a row exists, so we allow.
-                  return NODE_ACCESS_ALLOW;
-                }
-                else {
-                  // They are using views to restrict affected nodes.
-                  $nids = $result->fetchCol();
-                  if (!empty($nids) && nodeaccess_userreference_node_in_field_view($data, $nids)) {
-                    // At least one of the nodes is in the view, so allow.
-                    return NODE_ACCESS_ALLOW;
-                  }
-                }
+    // Get list of content types.
+    $types = node_type_get_types();
+    foreach ($types as $type) {
+      $bundle = $type->type;
+      // Get nodeaccess_userreference settings for every content type.
+      $field_data = nodeaccess_userreference_field_settings($bundle);
+      if (!empty($field_data)) {
+        // Content type has nodeaccess_userreference field.
+        foreach ($field_data as $field_name => $data) {
+          if (!empty($data['create'][$node])) {
+            // nodeaccess_userreference provides "create" grant for the content type we are checking access on.
+            $field_info = field_info_field($field_name);
+            // Check field_type so we can support entityreference fields as well as user_reference fields.
+            if ($field_info['type'] == 'user_reference') {
+              $sql = 'SELECT DISTINCT fd.entity_id ' .
+                     'FROM {field_data_' . $field_name . '} fd ' .
+                     'INNER JOIN {node} n ON n.vid = fd.revision_id ' .
+                     'WHERE fd.' . $field_name . '_uid = :uid ' .
+                     'AND fd.bundle = :bundle';
+            }
+            elseif ($field_info['type'] == 'entityreference') {
+              $sql = 'SELECT DISTINCT fd.entity_id ' .
+                     'FROM {field_data_' . $field_name . '} fd ' .
+                     'INNER JOIN {node} n ON n.vid = fd.revision_id ' .
+                     'WHERE fd.' . $field_name . '_target_id = :uid ' .
+                     'AND fd.bundle = :bundle';
+            }
+            $args = array(
+              ':uid' => $account->uid,
+              ':bundle' => $bundle,
+            );
+            $result = db_query($sql, $args);
+            if (empty($data['views']['view']) && $result->rowCount()) {
+              // Simple case, a row exists, so we allow.
+              return NODE_ACCESS_ALLOW;
+            }
+            else {
+              // They are using views to restrict affected nodes.
+              $nids = $result->fetchCol();
+              if (!empty($nids) && nodeaccess_userreference_node_in_field_view($data, $nids)) {
+                // At least one of the nodes is in the view, so allow.
+                return NODE_ACCESS_ALLOW;
               }
             }
           }
