@@ -214,7 +214,10 @@ function nodeaccess_userreference_views_display_title($view_name, $view, $displa
 function nodeaccess_userreference_field_update_instance($instance, $prior_instance) {
   nodeaccess_userreference_field_settings($instance['bundle'], $instance['field_name'], $instance['settings']['nodeaccess_userreference']);
 
-  $nodes = node_load_multiple(NULL, array('type' => $instance['bundle']));
+  $nodes = db_query("SELECT 1 FROM {node} WHERE type = :type", array(
+    ':type' => $instance['bundle'],
+  ))->fetchField();
+
   if ($nodes) {
     // Because the field settings have changed we should prompt for a full rebuild.
     node_access_needs_rebuild(TRUE);
