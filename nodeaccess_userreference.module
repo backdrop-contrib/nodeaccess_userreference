@@ -212,15 +212,26 @@ function nodeaccess_userreference_views_display_title($view_name, $view, $displa
  * Implements hook_field_update_instance().
  */
 function nodeaccess_userreference_field_update_instance($instance, $prior_instance) {
-  nodeaccess_userreference_field_settings($instance['bundle'], $instance['field_name'], $instance['settings']['nodeaccess_userreference']);
+  $field_info = field_info_field($instance['field_name']);
+  if (
+    (
+      ($field_info['type'] == 'entityreference' && $field_info['settings']['target_type'] == 'user')
+      ||
+      $field_info['type'] == 'user_reference'
+    )
+    &&
+    $instance['entity_type'] == 'node'
+  ) {
+     nodeaccess_userreference_field_settings($instance['bundle'], $instance['field_name'], $instance['settings']['nodeaccess_userreference']);
 
-  $nodes = db_query("SELECT 1 FROM {node} WHERE type = :type", array(
-    ':type' => $instance['bundle'],
-  ))->fetchField();
+     $nodes = db_query("SELECT 1 FROM {node} WHERE type = :type", array(
+       ':type' => $instance['bundle'],
+     ))->fetchField();
 
-  if ($nodes) {
-    // Because the field settings have changed we should prompt for a full rebuild.
-    node_access_needs_rebuild(TRUE);
+     if ($nodes) {
+       // Because the field settings have changed we should prompt for a full rebuild.
+       node_access_needs_rebuild(TRUE);
+     }
   }
 }
 
