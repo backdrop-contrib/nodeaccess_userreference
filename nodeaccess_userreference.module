@@ -328,6 +328,10 @@ function nodeaccess_userreference_node_access_records($node) {
     foreach ($field_data as $field_name => &$data) {
       if (!empty($data) && (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, array($node->nid)))) {
 
+        if (!isset($data['priority'])) {
+          $data['priority'] = 0;
+        }
+
         if (!empty($node->status) || !empty($data['referenced_published'])) {
 
           // Add referenced user grants.
