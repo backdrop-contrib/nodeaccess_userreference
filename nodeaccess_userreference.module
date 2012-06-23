@@ -30,9 +30,21 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
     $form['#instance']['entity_type'] == 'node'
   ) {
     $data = $form['#instance']['settings']['nodeaccess_userreference'];
+    $current = nodeaccess_userreference_field_settings($form['#instance']['bundle'], $form['#instance']['field_name']);
+
     $form['instance']['settings']['nodeaccess_userreference'] = array(
       '#type' => 'fieldset',
       '#title' => t('Node access user reference'),
+      '#tree' => TRUE,
+      '#collapsible' => TRUE,
+      '#collapsed' => empty($current),
+    );
+
+
+    $referenced_states = array(
+      array('[name="instance[settings][nodeaccess_userreference][referenced][view]"]' => array('checked' => TRUE)),
+      array('[name="instance[settings][nodeaccess_userreference][referenced][update]"]' => array('checked' => TRUE)),
+      array('[name="instance[settings][nodeaccess_userreference][referenced][delete]"]' => array('checked' => TRUE)),
     );
     $form['instance']['settings']['nodeaccess_userreference']['referenced'] = array(
       '#type' => 'checkboxes',
@@ -75,6 +87,9 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
         'delete' => t('Delete'),
       ),
       '#description' => t('These content access permissions will be granted to the authors of nodes.'),
+      '#states' => array(
+        'visible' => $referenced_states,
+      ),
     );
     $form['instance']['settings']['nodeaccess_userreference']['author_published'] = array(
       '#type' => 'select',
@@ -84,6 +99,9 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
       '#options' => array(
         0 => t('Give these grants for published nodes only'),
         1 => t('Give these grants for published and unpublished nodes'),
+      ),
+      '#states' => array(
+        'visible' => $referenced_states,
       ),
     );
     $form['instance']['settings']['nodeaccess_userreference']['all'] = array(
@@ -99,6 +117,9 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
           '%anon' => format_username(drupal_anonymous_user()),
         )
       ),
+      '#states' => array(
+        'visible' => $referenced_states,
+      ),
     );
     $form['instance']['settings']['nodeaccess_userreference']['all_published'] = array(
       '#type' => 'select',
@@ -108,6 +129,9 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
       '#options' => array(
         0 => t('Give these grants for published nodes only'),
         1 => t('Give these grants for published and unpublished nodes'),
+      ),
+      '#states' => array(
+        'visible' => $referenced_states,
       ),
     );
     $form['instance']['settings']['nodeaccess_userreference']['unused'] = array(
@@ -119,6 +143,9 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
         1 => t('Always'),
       ),
       '#description' => t('Determines whether to set grants when the field is not in use.'),
+      '#states' => array(
+        'visible' => $referenced_states,
+      ),
     );
     if (module_exists('views')) {
       $form['instance']['settings']['nodeaccess_userreference']['views'] = array(
@@ -162,6 +189,9 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
       '#title' => t('Priority'),
       '#default_value' => isset($data['priority']) ? $data['priority'] : 0,
       '#description' => t('It is recommended to always leave this set to 0.'),
+      '#states' => array(
+        'visible' => $referenced_states,
+      ),
     );
   }
 }
@@ -223,7 +253,12 @@ function nodeaccess_userreference_field_update_instance($instance, $prior_instan
     $instance['entity_type'] == 'node'
   ) {
 
-     $old_settings = nodeaccess_userreference_reduce_variable($prior_instance['settings']['nodeaccess_userreference']);
+     if (isset($prior_instance['settings']['nodeaccess_userreference'])) {
+       $old_settings = nodeaccess_userreference_reduce_variable($prior_instance['settings']['nodeaccess_userreference']);
+     }
+     else {
+       $old_settings = array();
+     }
      $new_settings = nodeaccess_userreference_reduce_variable($instance['settings']['nodeaccess_userreference']);
 
      if ($old_settings != $new_settings) {
@@ -268,13 +303,13 @@ function nodeaccess_userreference_add_grant(&$grants, $realm, $gid, $priority, $
     );
   }
   // Add the grants needed, so as not to override previous iterations.
-  if (isset($settings['view']) && $settings['view']) {
+  if (!empty($settings['view'])) {
     $grants[$key]['grant_view'] = 1;
   }
-  if (isset($settings['update']) && $settings['update']) {
+  if (!empty($settings['update'])) {
     $grants[$key]['grant_update'] = 1;
   }
-  if (isset($settings['delete']) && $settings['delete']) {
+  if (!empty($settings['delete'])) {
     $grants[$key]['grant_delete'] = 1;
   }
   // Increase the priority if needed.
@@ -322,7 +357,7 @@ function nodeaccess_userreference_node_access_records($node) {
 
         }
 
-        if ($data['unused'] && isset($data['referenced'])) {
+        if (!empty($data['unused']) && isset($data['referenced'])) {
           // Add a dummy grant for user 1 to block other users' access.
           nodeaccess_userreference_add_grant(
             $grants,
@@ -337,7 +372,7 @@ function nodeaccess_userreference_node_access_records($node) {
         // but redundant calls will be correctly handled by the helper function:
         // nodeaccess_userreference_add_grant().
         if (!empty($grants)) {
-          if (!empty($node->status) || !empty($data['author_published'])) {
+          if (!empty($data['author']) && (!empty($node->status) || !empty($data['author_published']))) {
             // Add author grants.
             nodeaccess_userreference_add_grant(
               $grants,
@@ -347,7 +382,7 @@ function nodeaccess_userreference_node_access_records($node) {
               $data['author']
             );
           }
-          if (!empty($node->status) || !empty($data['all_published'])) {
+          if (!empty($data['all']) && (!empty($node->status) || !empty($data['all_published']))) {
             // Add all grants.
             nodeaccess_userreference_add_grant(
               $grants,
