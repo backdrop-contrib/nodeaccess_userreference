@@ -253,13 +253,12 @@ function nodeaccess_userreference_field_update_instance($instance, $prior_instan
     $instance['entity_type'] == 'node'
   ) {
 
-     if (isset($prior_instance['settings']['nodeaccess_userreference'])) {
-       $old_settings = nodeaccess_userreference_reduce_variable($prior_instance['settings']['nodeaccess_userreference']);
-     }
-     else {
-       $old_settings = array();
-     }
-     $new_settings = nodeaccess_userreference_reduce_variable($instance['settings']['nodeaccess_userreference']);
+     $old_settings = isset($prior_instance['settings']['nodeaccess_userreference']) ?
+       nodeaccess_userreference_reduce_variable($prior_instance['settings']['nodeaccess_userreference']) :
+       array();
+     $new_settings = isset($instance['settings']['nodeaccess_userreference']) ?
+       nodeaccess_userreference_reduce_variable($instance['settings']['nodeaccess_userreference']) :
+       array();
 
      if ($old_settings != $new_settings) {
        $nodes = db_query("SELECT 1 FROM {node} WHERE type = :type", array(
