@@ -428,6 +428,9 @@ function nodeaccess_userreference_node_access($node, $op, $account) {
   }
   else {
     // $op == 'create'.
+    if (is_object($node)) {
+      $node = $node->type;
+    }
     // Get list of content types.
     $types = node_type_get_types();
     foreach ($types as $type) {
