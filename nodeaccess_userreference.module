@@ -261,6 +261,8 @@ function nodeaccess_userreference_field_update_instance($instance, $prior_instan
        array();
 
      if ($old_settings != $new_settings) {
+       nodeaccess_userreference_field_settings($instance['bundle'], $instance['field_name'], $new_settings);
+
        $nodes = db_query("SELECT 1 FROM {node} WHERE type = :type", array(
          ':type' => $instance['bundle'],
        ))->fetchField();
@@ -496,7 +498,7 @@ function nodeaccess_userreference_node_access($node, $op, $account) {
  *   The stored or updated value of the settings for this field, or array() if no settings found.
  */
 function nodeaccess_userreference_field_settings($bundle_name, $field_name = NULL, $variable = NULL) {
-  $data = variable_get('nodeaccess_userreference', NULL);
+  $data = variable_get('nodeaccess_userreference', array());
 
   if (!is_null($field_name)) {
     if (!is_null($variable)) {
