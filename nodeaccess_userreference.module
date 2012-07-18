@@ -29,7 +29,8 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
     &&
     $form['#instance']['entity_type'] == 'node'
   ) {
-    $data = $form['#instance']['settings']['nodeaccess_userreference'];
+    $data = isset($form['#instance']['settings']['nodeaccess_userreference']) ?
+      $form['#instance']['settings']['nodeaccess_userreference'] : array();
     $current = nodeaccess_userreference_field_settings($form['#instance']['bundle'], $form['#instance']['field_name']);
 
     $form['instance']['settings']['nodeaccess_userreference'] = array(
