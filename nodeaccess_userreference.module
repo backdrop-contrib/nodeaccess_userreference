@@ -6,6 +6,16 @@
  */
 
 /**
+ * Implements hook_autoload_info().
+ */
+function nodeaccess_userreference_autoload_info() {
+  return array(
+    'nodeaccess_userreference_views_plugin_display' => 'includes/nodeaccess_userreference_views_plugin_display.inc',
+    'nodeaccess_userreference_views_plugin_style' => 'includes/nodeaccess_userreference_views_plugin_style.inc'
+  );
+}
+
+/**
  * Implements hook_node_grants().
  */
 function nodeaccess_userreference_node_grants($account, $op) {
@@ -115,7 +125,7 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
       '#description' => t(
         'These content access permissions will be granted to all users including %anon.',
         array(
-          '%anon' => format_username(drupal_anonymous_user()),
+          '%anon' => format_username(backdrop_anonymous_user()),
         )
       ),
       '#states' => array(
@@ -634,7 +644,7 @@ function nodeaccess_userreference_field_delete_instance($instance) {
 function nodeaccess_userreference_views_api() {
   return array(
     'api' => 3,
-    'path' => drupal_get_path('module', 'nodeaccess_userreference') . '/includes',
+    'path' => backdrop_get_path('module', 'nodeaccess_userreference') . '/includes',
   );
 }
 

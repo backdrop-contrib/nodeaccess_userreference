@@ -47,7 +47,7 @@ function nodeaccess_userreference_update_6300() {
   variable_set('nodeaccess_userreference_author_view', $view);
   variable_set('nodeaccess_userreference_author_update', $update);
   variable_set('nodeaccess_userreference_author_delete', $delete);
-  drupal_set_message(
+  backdrop_set_message(
     t(
       'Node access user reference settings have changed.  Please check your User reference field settings.'
     ),
