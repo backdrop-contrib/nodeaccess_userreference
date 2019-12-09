@@ -41,7 +41,8 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
   ) {
     $data = isset($form['#instance']['settings']['nodeaccess_userreference']) ?
       $form['#instance']['settings']['nodeaccess_userreference'] : array();
-    $current = nodeaccess_userreference_field_settings($form['#instance']['bundle'], $form['#instance']['field_name']);
+    $config = config('field.instance.node.' . $form['#instance']['bundle'] . '.' . $form['#instance']['field_name']);
+    $current = $config->get('settings.nodeaccess_userreference');
 
     $form['instance']['settings']['nodeaccess_userreference'] = array(
       '#type' => 'fieldset',
@@ -272,7 +273,6 @@ function nodeaccess_userreference_field_update_instance($instance, $prior_instan
        array();
 
      if ($old_settings != $new_settings) {
-       nodeaccess_userreference_field_settings($instance['bundle'], $instance['field_name'], $new_settings);
 
        $nodes = db_query("SELECT 1 FROM {node} WHERE type = :type", array(
          ':type' => $instance['bundle'],
@@ -426,7 +426,7 @@ function nodeaccess_userreference_node_access($node, $op, $account) {
     $field_data = nodeaccess_userreference_field_settings($node->type);
     if (!empty($field_data)) {
       foreach ($field_data as $field_name => &$data) {
-        if (!empty($data->referenced['deny_' . $op]) && (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, array($node->nid)))) {
+        if (!empty($data['referenced']['deny_' . $op]) && (empty($data['views']['view']) || nodeaccess_userreference_node_in_field_view($data, array($node->nid)))) {
           // Add referenced user grants.
           $items = field_get_items('node', $node, $field_name);
           if (!empty($items)) {
@@ -500,43 +500,23 @@ function nodeaccess_userreference_node_access($node, $op, $account) {
 /**
  * Set and get nodeaccess userreference field settings.
  *
- * @param $bundle_name
+ * @param string $bundle_name
  *   The name of the bundle.
- * @param $field_name
- *   The name of the field.
- * @param $variable
- *   If set will update the value of the settings for this field.
- * @return
- *   The stored or updated value of the settings for this field, or array() if no settings found.
+ * @return array
+ *   The stored values of the settings for a bundle's fields, or array() if no settings found.
  */
-function nodeaccess_userreference_field_settings($bundle_name, $field_name = NULL, $variable = NULL) {
-  $data = variable_get('nodeaccess_userreference', array());
+function nodeaccess_userreference_field_settings($bundle_name) {
+  $instance_names = config_get_names_with_prefix('field.instance.node.' . $bundle_name);
+  $instances = config_load_multiple($instance_names);
 
-  if (!is_null($field_name)) {
-    if (!is_null($variable)) {
-      if (!empty($variable)) {
-        $data[$bundle_name][$field_name] = $variable;
-      }
-      else {
-        // Variable is empty.
-        unset($data[$bundle_name][$field_name]);
-        // Clear empty bundle too.
-        if (empty($data[$bundle_name])) {
-          unset($data[$bundle_name]);
-        }
-      }
-      variable_set('nodeaccess_userreference', $data);
-    }
-    if (isset($data[$bundle_name][$field_name])) {
-      return $data[$bundle_name][$field_name];
+  $data = array();
+  foreach ($instances as $instance) {
+    if (isset($instance['settings']['nodeaccess_userreference'])) {
+      $data[$instance['field_name']] = $instance['settings']['nodeaccess_userreference'];
     }
   }
-  elseif (isset($data[$bundle_name])) {
-    return $data[$bundle_name];
-  }
 
-  // No data found
-  return array();
+  return $data;
 }
 
 /**
@@ -629,13 +609,6 @@ function nodeaccess_userreference_node_access_explain($row) {
     }
 
   }
-}
-
-/**
- * Implements hook_field_delete_instance().
- */
-function nodeaccess_userreference_field_delete_instance($instance) {
-  nodeaccess_userreference_field_settings($instance['bundle'], $instance['field_name'], FALSE);
 }
 
 /**
