@@ -126,7 +126,7 @@ function nodeaccess_userreference_form_field_ui_field_edit_form_alter(&$form, $f
       '#description' => t(
         'These content access permissions will be granted to all users including %anon.',
         array(
-          '%anon' => format_username(backdrop_anonymous_user()),
+          '%anon' => user_format_name(backdrop_anonymous_user()),
         )
       ),
       '#states' => array(
